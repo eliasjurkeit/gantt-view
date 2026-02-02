@@ -64,6 +64,7 @@ interface EventBar {
   durationHours: string;
   groupKey: string;
   sublane: number;
+  isIdEvent: boolean;
 }
 
 interface DailyHourRange {
@@ -119,6 +120,15 @@ const laneHeight = computed(() => {
   const value = Number(raw);
   if (!Number.isFinite(value)) return LANE_HEIGHT;
   return Math.min(60, Math.max(8, value));
+});
+
+const idOpacity = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return 0.4;
+  const raw = header.idOpacity;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 0.4;
+  return Math.min(1, Math.max(0, value));
 });
 
 const skippedDays = computed(() => {
@@ -453,6 +463,7 @@ const eventBars = computed((): EventBar[] => {
       eventy.firstLine?.restTrimmed ||
       eventy.firstLine?.rest ||
       "Event";
+    const hasId = !!eventy.properties?.id;
     const groupKeyRaw =
       (eventy.properties?.id as string | undefined) ??
       (eventy.properties?.for as string | undefined) ??
@@ -483,6 +494,7 @@ const eventBars = computed((): EventBar[] => {
       durationHours,
       groupKey,
       sublane: 0,
+      isIdEvent: hasId,
       startTime,
       endTime,
     });
@@ -754,6 +766,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               height: `${laneHeight}px`,
               background: bar.color,
               borderColor: bar.color,
+              opacity: bar.isIdEvent ? idOpacity : 1,
           }"
           :title="`${bar.title} (${bar.rangeLabel})`"
         >
