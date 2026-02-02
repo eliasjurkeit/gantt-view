@@ -271,12 +271,20 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
             class="gantt-sidebar-row"
             :style="{
               height: `${LANE_HEIGHT + LANE_GAP}px`,
-              background: bar.color,
-              borderColor: bar.borderColor,
+              paddingBottom: `${LANE_GAP}px`,
             }"
             :title="bar.title"
           >
-            <span class="gantt-sidebar-text">{{ bar.title }}</span>
+            <div
+              class="gantt-sidebar-pill"
+              :style="{
+                height: `${LANE_HEIGHT}px`,
+                background: bar.color,
+                borderColor: bar.borderColor,
+              }"
+            >
+              <span class="gantt-sidebar-text">{{ bar.title }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -384,9 +392,16 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   align-items: center;
   padding: 0 10px;
   box-sizing: border-box;
+}
+
+.gantt-sidebar-pill {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: 6px;
-  margin: 2px 8px;
+  width: 100%;
 }
 
 .gantt-sidebar-text {
