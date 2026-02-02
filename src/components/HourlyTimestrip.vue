@@ -89,6 +89,34 @@ const headerOptions = computed(() => {
     : undefined;
 });
 
+const skippedDays = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return new Set<string>();
+  const raw = header.skipDays;
+  if (!Array.isArray(raw)) return new Set<string>();
+
+  const values = raw
+    .map((value) => String(value))
+    .join(",")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const result = new Set<string>();
+  values.forEach((value) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    const parsed = DateTime.fromISO(value);
+    if (!parsed.isValid) return;
+    const isoDate = parsed.toISODate();
+    if (isoDate) result.add(isoDate);
+  });
+
+  return result;
+});
+
+const isSkippedDay = (dateTime: DateTime) =>
+  skippedDays.value.has(dateTime.toISODate());
+
 const parseTimePart = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -191,18 +219,25 @@ const darkenHex = (hex: string, amount: number) => {
 const visibleMinutesBetween = (start: DateTime, end: DateTime) => {
   if (+end <= +start) return 0;
   const range = dailyHourRange.value;
-  if (!range) {
-    return end.diff(start, "minutes").minutes;
-  }
-
   let minutes = 0;
   let day = start.startOf("day");
   const lastDay = end.startOf("day");
+
   while (day <= lastDay) {
-    const rangeStart = day.plus({ minutes: range.startMinutes });
-    const rangeEnd = day.plus({ minutes: range.endMinutes });
-    const segmentStart = DateTime.max(start, rangeStart);
-    const segmentEnd = DateTime.min(end, rangeEnd);
+    if (isSkippedDay(day)) {
+      day = day.plus({ days: 1 });
+      continue;
+    }
+
+    const dayStart = range
+      ? day.plus({ minutes: range.startMinutes })
+      : day.startOf("day");
+    const dayEnd = range
+      ? day.plus({ minutes: range.endMinutes })
+      : day.plus({ days: 1 });
+
+    const segmentStart = DateTime.max(start, dayStart);
+    const segmentEnd = DateTime.min(end, dayEnd);
     if (+segmentEnd > +segmentStart) {
       minutes += segmentEnd.diff(segmentStart, "minutes").minutes;
     }
@@ -219,14 +254,24 @@ const hourMarkers = computed((): HourMarker[] => {
   const markers: HourMarker[] = [];
   const { start, end } = timeRange.value;
   const range = dailyHourRange.value;
+  const startBound = start.startOf("hour");
+  const endBound = end.endOf("hour");
 
   if (range) {
     let day = start.startOf("day");
     const lastDay = end.startOf("day");
     while (day <= lastDay) {
+      if (isSkippedDay(day)) {
+        day = day.plus({ days: 1 });
+        continue;
+      }
       let minutes = range.startMinutes;
       while (minutes < range.endMinutes) {
         const markerTime = day.plus({ minutes });
+        if (markerTime < startBound || markerTime > endBound) {
+          minutes += 60;
+          continue;
+        }
         markers.push({
           hour: markerTime.hour,
           dateTime: markerTime,
@@ -251,6 +296,10 @@ const hourMarkers = computed((): HourMarker[] => {
   const endCeiled = end.endOf("hour");
 
   while (current <= endCeiled) {
+    if (isSkippedDay(current)) {
+      current = current.plus({ days: 1 }).startOf("day");
+      continue;
+    }
     const isStartOfDay = current.hour === 0;
     markers.push({
       hour: current.hour,
