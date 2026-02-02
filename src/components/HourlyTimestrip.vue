@@ -1250,6 +1250,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .gantt-sidebar-rect {
@@ -1319,6 +1321,8 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   padding: 6px 12px 10px;
   border-top: 1px solid rgba(15, 23, 42, 0.15);
+  position: relative;
+  z-index: 1;
 }
 
 .gantt-root.dark .gantt-sidebar-total-row {
