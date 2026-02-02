@@ -557,22 +557,30 @@ const sectionsInfo = computed(() => {
     return {
       eventSection: new Map<string, string>(),
       sectionColors: new Map<string, { fill: string; border: string; base: string }>(),
+      sectionOrder: [] as string[],
     };
   }
 
   const eventSection = new Map<string, string>();
-  const sectionColors = new Map<string, { fill: string; border: string; base: string }>();
+  const sectionColors = new Map<
+    string,
+    { fill: string; border: string; base: string }
+  >();
+  const sectionOrder: string[] = [];
 
   const registerSection = (name: string) => {
     if (sectionColors.has(name)) return sectionColors.get(name)!;
     const colorIndex =
-      PASTEL_PALETTE.length === 0 ? 0 : Math.abs(hashString(name)) % PASTEL_PALETTE.length;
+      PASTEL_PALETTE.length === 0
+        ? 0
+        : sectionOrder.length % PASTEL_PALETTE.length;
     const base = PASTEL_PALETTE[colorIndex] ?? "#A5D8FF";
     const rgb = hexToRgb(base) ?? { r: 148, g: 163, b: 184 };
     const fill = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
     const border = darkenHex(base, 28);
     const entry = { fill, border, base };
     sectionColors.set(name, entry);
+    sectionOrder.push(name);
     return entry;
   };
 
@@ -598,7 +606,7 @@ const sectionsInfo = computed(() => {
 
   walk(transformed, []);
 
-  return { eventSection, sectionColors };
+  return { eventSection, sectionColors, sectionOrder };
 });
 
 const eventBars = computed((): EventBar[] => {
@@ -609,6 +617,8 @@ const eventBars = computed((): EventBar[] => {
 
   const { start } = timeRange.value;
   const eventSection = sectionsInfo.value.eventSection;
+  const sectionColors = sectionsInfo.value.sectionColors;
+  const sectionOrder = sectionsInfo.value.sectionOrder;
   const bars: Array<
     EventBar & { startTime: DateTime; endTime: DateTime }
   > = [];
@@ -760,8 +770,13 @@ const eventBars = computed((): EventBar[] => {
     const lanes = Array.from(lanesBySection.get(sectionKey) ?? []).sort(
       (a, b) => a - b
     );
+    const orderIndex = sectionOrder.indexOf(sectionKey);
+    const paletteIndex =
+      orderIndex >= 0 ? orderIndex : sectionIdx;
     const base =
-      PASTEL_PALETTE[sectionIdx % PASTEL_PALETTE.length] ?? "#A5D8FF";
+      sectionColors.get(sectionKey)?.base ??
+      PASTEL_PALETTE[paletteIndex % PASTEL_PALETTE.length] ??
+      "#A5D8FF";
 
     lanes.forEach((laneIdx, idx) => {
       const factor = Math.min(0.8, 0.35 + idx * 0.22);
