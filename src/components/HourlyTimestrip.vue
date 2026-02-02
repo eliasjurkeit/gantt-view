@@ -212,14 +212,6 @@ const totalLabel = computed(() => {
     : "Total";
 });
 
-const eventsLabel = computed(() => {
-  const header = headerOptions.value;
-  const raw = header?.eventsLabel;
-  return typeof raw === "string" && raw.trim().length > 0
-    ? raw.trim()
-    : "Events";
-});
-
 const skippedDays = computed(() => {
   const header = headerOptions.value;
   if (!header) return new Set<string>();
@@ -1033,7 +1025,7 @@ onBeforeUnmount(() => {
           class="gantt-sidebar-content"
           :style="{
             height: `${totalHeight}px`,
-            paddingTop: `${sidebarRowsOffset}px`,
+            paddingTop: `${sidebarRowsOffset + LABEL_HEIGHT}px`,
           }"
         >
           <div
@@ -1056,9 +1048,6 @@ onBeforeUnmount(() => {
             }"
           ></div>
         </div>
-          <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
-            <span>{{ eventsLabel }}</span>
-          </div>
           <div
             v-for="(row, index) in sidebarRows"
             :key="row.key"
