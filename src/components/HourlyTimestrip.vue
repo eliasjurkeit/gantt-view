@@ -632,10 +632,26 @@ const rowLayouts = computed(() => {
 
   const contentHeight = layout.length ? offset - LANE_GAP : 0;
 
-  return { rows: layout, contentHeight };
+  return { rows: layout, contentHeight, totals: rows };
 });
 
 const sidebarRows = computed(() => rowLayouts.value.rows);
+const sidebarTotals = computed(() => {
+  const totals: number[] = [];
+  rowLayouts.value.rows.forEach((row) => {
+    row.totals.forEach((value, idx) => {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return;
+      if (totals[idx] === undefined) totals[idx] = 0;
+      totals[idx] += numeric;
+    });
+  });
+  return totals.map((total) =>
+    Math.round(total * 10) % 10 === 0
+      ? `${Math.round(total)}`
+      : total.toFixed(1)
+  );
+});
 
 const rowTopByKey = computed(() => {
   const map = new Map<string, number>();
@@ -755,6 +771,21 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
                   </span>
                   <span class="gantt-sidebar-total-value">{{ total }}</span>
                 </div>
+              </div>
+            </div>
+          </div>
+          <div class="gantt-sidebar-total-row">
+            <span class="gantt-sidebar-total-label">Total</span>
+            <div class="gantt-sidebar-totals">
+              <div
+                v-for="(total, idx) in sidebarTotals"
+                :key="idx"
+                class="gantt-sidebar-total"
+              >
+                <span class="gantt-sidebar-total-label">
+                  {{ idx === 0 ? "Target" : "Actual" }}
+                </span>
+                <span class="gantt-sidebar-total-value">{{ total }}</span>
               </div>
             </div>
           </div>
@@ -912,7 +943,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 }
 
 .gantt-root.dark .gantt-sidebar-text {
-  color: #0f172a;
+  color: #e2e8f0;
 }
 
 .gantt-sidebar-totals {
@@ -937,13 +968,29 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 }
 
 .gantt-root.dark .gantt-sidebar-total-label {
-  color: #0f172a;
+  color: #e2e8f0;
 }
 
 .gantt-sidebar-total-value {
   font-size: 12px;
   font-weight: 700;
   color: #0f172a;
+}
+
+.gantt-root.dark .gantt-sidebar-total-value {
+  color: #e2e8f0;
+}
+
+.gantt-sidebar-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px 10px;
+  border-top: 1px solid rgba(15, 23, 42, 0.15);
+}
+
+.gantt-root.dark .gantt-sidebar-total-row {
+  border-top-color: rgba(226, 232, 240, 0.2);
 }
 
 .gantt-sidebar-resizer {
