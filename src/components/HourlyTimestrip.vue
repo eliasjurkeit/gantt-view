@@ -147,6 +147,22 @@ const actualLabel = computed(() => {
     : "Actual";
 });
 
+const totalLabel = computed(() => {
+  const header = headerOptions.value;
+  const raw = header?.totalLabel;
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : "Total";
+});
+
+const eventsLabel = computed(() => {
+  const header = headerOptions.value;
+  const raw = header?.eventsLabel;
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : "Events";
+});
+
 const skippedDays = computed(() => {
   const header = headerOptions.value;
   if (!header) return new Set<string>();
@@ -753,7 +769,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
           }"
         >
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
-            Events
+            {{ eventsLabel }}
           </div>
           <div
             v-for="(row, index) in sidebarRows"
@@ -791,7 +807,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
             </div>
           </div>
           <div class="gantt-sidebar-total-row">
-            <span class="gantt-sidebar-total-label">Total</span>
+            <span class="gantt-sidebar-total-label">{{ totalLabel }}</span>
             <div class="gantt-sidebar-totals">
               <div
                 v-for="(total, idx) in sidebarTotals"
