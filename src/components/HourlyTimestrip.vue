@@ -9,6 +9,7 @@ const markwhenStore = useMarkwhenStore();
 const HOUR_WIDTH = 60; // pixels per hour
 const MARKER_HOURS = 2;
 const LABEL_HEIGHT = 24;
+const LEGEND_GAP = 25;
 const LANE_HEIGHT = 20;
 const LANE_GAP = 6;
 const MIN_BAR_WIDTH = 6;
@@ -410,7 +411,11 @@ const eventBars = computed((): EventBar[] => {
 const laneCount = computed(() => Math.max(1, eventBars.value.length));
 
 const totalHeight = computed(
-  () => LABEL_HEIGHT + laneCount.value * (LANE_HEIGHT + LANE_GAP) + 12
+  () =>
+    LABEL_HEIGHT +
+    LEGEND_GAP +
+    laneCount.value * (LANE_HEIGHT + LANE_GAP) +
+    12
 );
 
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
@@ -447,7 +452,10 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
         class="gantt-sidebar-scroll"
         @scroll="syncScroll('sidebar')"
       >
-        <div class="gantt-sidebar-content" :style="{ height: `${totalHeight}px` }">
+        <div
+          class="gantt-sidebar-content"
+          :style="{ height: `${totalHeight}px`, paddingTop: `${LEGEND_GAP}px` }"
+        >
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
             Events
           </div>
@@ -502,7 +510,11 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
             :style="{
               left: `${bar.left}px`,
               width: `${bar.width}px`,
-              top: `${LABEL_HEIGHT + bar.lane * (LANE_HEIGHT + LANE_GAP)}px`,
+              top: `${
+                LABEL_HEIGHT +
+                LEGEND_GAP +
+                bar.lane * (LANE_HEIGHT + LANE_GAP)
+              }px`,
               height: `${LANE_HEIGHT}px`,
               background: bar.color,
               borderColor: bar.borderColor,
