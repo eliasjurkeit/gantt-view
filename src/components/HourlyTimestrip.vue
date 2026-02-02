@@ -108,6 +108,15 @@ const headerOptions = computed(() => {
     : undefined;
 });
 
+const laneHeight = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return LANE_HEIGHT;
+  const raw = header.laneHeight;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return LANE_HEIGHT;
+  return Math.min(60, Math.max(8, value));
+});
+
 const skippedDays = computed(() => {
   const header = headerOptions.value;
   if (!header) return new Set<string>();
@@ -502,7 +511,7 @@ const totalHeight = computed(
   () =>
     legendStackHeight.value +
     BAR_OFFSET +
-    laneCount.value * (LANE_HEIGHT + LANE_GAP) +
+    laneCount.value * (laneHeight.value + LANE_GAP) +
     12
 );
 
@@ -555,14 +564,14 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
             :key="index"
             class="gantt-sidebar-row"
             :style="{
-              height: `${LANE_HEIGHT + LANE_GAP}px`,
+              height: `${laneHeight + LANE_GAP}px`,
             }"
             :title="bar.title"
           >
             <div
               class="gantt-sidebar-rect"
               :style="{
-                height: `${LANE_HEIGHT}px`,
+                height: `${laneHeight}px`,
                 background: bar.color,
                 borderColor: bar.borderColor,
                 marginBottom: `${LANE_GAP}px`,
@@ -618,9 +627,9 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               top: `${
                 legendStackHeight +
                 BAR_OFFSET +
-                bar.lane * (LANE_HEIGHT + LANE_GAP)
+                bar.lane * (laneHeight + LANE_GAP)
               }px`,
-              height: `${LANE_HEIGHT}px`,
+              height: `${laneHeight}px`,
               background: bar.color,
               borderColor: bar.borderColor,
           }"
