@@ -269,7 +269,11 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
             v-for="(bar, index) in eventBars"
             :key="index"
             class="gantt-sidebar-row"
-            :style="{ height: `${LANE_HEIGHT + LANE_GAP}px` }"
+            :style="{
+              height: `${LANE_HEIGHT + LANE_GAP}px`,
+              background: bar.color,
+              borderColor: bar.borderColor,
+            }"
             :title="bar.title"
           >
             <span class="gantt-sidebar-text">{{ bar.title }}</span>
@@ -378,8 +382,11 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 .gantt-sidebar-row {
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 10px;
   box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  margin: 2px 8px;
 }
 
 .gantt-sidebar-text {
@@ -391,7 +398,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 }
 
 .gantt-root.dark .gantt-sidebar-text {
-  color: #e2e8f0;
+  color: #0f172a;
 }
 
 .gantt-sidebar-resizer {
