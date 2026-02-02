@@ -785,6 +785,9 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               background: bar.color,
               borderColor: bar.color,
               opacity: bar.isIdEvent ? idOpacity : 1,
+              outline: bar.isIdEvent
+                ? `1px solid ${bar.borderColor}`
+                : 'none',
           }"
           :title="`${bar.title} (${bar.rangeLabel})`"
         >
