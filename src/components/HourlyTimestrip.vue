@@ -43,6 +43,11 @@ interface EventBar {
   borderColor: string;
 }
 
+interface DailyHourRange {
+  startMinutes: number;
+  endMinutes: number;
+}
+
 const timeRange = computed(() => {
   const transformed = markwhenStore.markwhen?.transformed;
   if (!transformed) {
@@ -73,6 +78,63 @@ const timeRange = computed(() => {
     start: earliestTime,
     end: latestTime,
   };
+});
+
+const headerOptions = computed(() => {
+  const header =
+    markwhenStore.markwhen?.parsed?.header ??
+    markwhenStore.markwhen?.transformed?.header;
+  return header && typeof header === "object"
+    ? (header as Record<string, unknown>)
+    : undefined;
+});
+
+const parseTimePart = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes(":")) {
+    const [hoursRaw, minutesRaw] = trimmed.split(":");
+    if (hoursRaw.length !== 2 || minutesRaw.length !== 2) return null;
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    if (hours < 0 || hours > 24 || minutes < 0 || minutes >= 60) return null;
+    return hours * 60 + minutes;
+  }
+  if (trimmed.length === 4 && /^\d{4}$/.test(trimmed)) {
+    const hours = Number(trimmed.slice(0, 2));
+    const minutes = Number(trimmed.slice(2, 4));
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    if (hours < 0 || hours > 24 || minutes < 0 || minutes >= 60) return null;
+    return hours * 60 + minutes;
+  }
+  return null;
+};
+
+const dailyHourRange = computed<DailyHourRange | null>(() => {
+  const header = headerOptions.value;
+  if (!header) return null;
+  const raw = header.hours;
+
+  if (typeof raw === "string") {
+    const parts = raw.split(/-|–|—/).map((part) => part.trim());
+    if (parts.length !== 2) return null;
+    const startMinutes = parseTimePart(parts[0]);
+    const endMinutes = parseTimePart(parts[1]);
+    if (startMinutes === null || endMinutes === null) return null;
+    if (endMinutes <= startMinutes) return null;
+    return { startMinutes, endMinutes };
+  }
+
+  if (Array.isArray(raw) && raw.length === 2) {
+    const startMinutes = parseTimePart(String(raw[0]));
+    const endMinutes = parseTimePart(String(raw[1]));
+    if (startMinutes === null || endMinutes === null) return null;
+    if (endMinutes <= startMinutes) return null;
+    return { startMinutes, endMinutes };
+  }
+
+  return null;
 });
 
 const sidebarWidth = ref(220);
@@ -126,6 +188,29 @@ const darkenHex = (hex: string, amount: number) => {
     .join("")}`;
 };
 
+const visibleMinutesBetween = (start: DateTime, end: DateTime) => {
+  if (+end <= +start) return 0;
+  const range = dailyHourRange.value;
+  if (!range) {
+    return end.diff(start, "minutes").minutes;
+  }
+
+  let minutes = 0;
+  let day = start.startOf("day");
+  const lastDay = end.startOf("day");
+  while (day <= lastDay) {
+    const rangeStart = day.plus({ minutes: range.startMinutes });
+    const rangeEnd = day.plus({ minutes: range.endMinutes });
+    const segmentStart = DateTime.max(start, rangeStart);
+    const segmentEnd = DateTime.min(end, rangeEnd);
+    if (+segmentEnd > +segmentStart) {
+      minutes += segmentEnd.diff(segmentStart, "minutes").minutes;
+    }
+    day = day.plus({ days: 1 });
+  }
+  return minutes;
+};
+
 const hourMarkers = computed((): HourMarker[] => {
   if (!timeRange.value) {
     return [];
@@ -133,6 +218,32 @@ const hourMarkers = computed((): HourMarker[] => {
 
   const markers: HourMarker[] = [];
   const { start, end } = timeRange.value;
+  const range = dailyHourRange.value;
+
+  if (range) {
+    let day = start.startOf("day");
+    const lastDay = end.startOf("day");
+    while (day <= lastDay) {
+      let minutes = range.startMinutes;
+      while (minutes < range.endMinutes) {
+        const markerTime = day.plus({ minutes });
+        markers.push({
+          hour: markerTime.hour,
+          dateTime: markerTime,
+          label:
+            minutes === range.startMinutes
+              ? markerTime.toFormat("MMM d")
+              : markerTime.toFormat("HH:mm"),
+          isStartOfDay: minutes === range.startMinutes,
+        });
+        minutes += 60;
+        if (markers.length > 500) break;
+      }
+      if (markers.length > 500) break;
+      day = day.plus({ days: 1 });
+    }
+    return markers;
+  }
 
   // Floor to the start of the hour
   let current = start.startOf("hour");
@@ -176,12 +287,11 @@ const eventBars = computed((): EventBar[] => {
     const dr = toDateRange(eventy.dateRangeIso);
     const startTime = dr.fromDateTime;
     const endTime = dr.toDateTime;
-    const durationHours = Math.max(
-      0,
-      endTime.diff(startTime, "hours").hours
-    );
-    const left = startTime.diff(start, "hours").hours * HOUR_WIDTH;
-    const width = Math.max(durationHours * HOUR_WIDTH, MIN_BAR_WIDTH);
+    const durationMinutes = visibleMinutesBetween(startTime, endTime);
+    if (durationMinutes <= 0) continue;
+    const left =
+      (visibleMinutesBetween(start, startTime) / 60) * HOUR_WIDTH;
+    const width = Math.max((durationMinutes / 60) * HOUR_WIDTH, MIN_BAR_WIDTH);
     const title =
       eventy.firstLine?.restTrimmed ||
       eventy.firstLine?.rest ||
