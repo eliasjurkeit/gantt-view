@@ -122,10 +122,10 @@ const laneHeight = computed(() => {
   return Math.min(60, Math.max(8, value));
 });
 
-const idOpacity = computed(() => {
+const targetBarOpacity = computed(() => {
   const header = headerOptions.value;
   if (!header) return 0.4;
-  const raw = header.idOpacity;
+  const raw = header.targetBarOpacity;
   const value = Number(raw);
   if (!Number.isFinite(value)) return 0.4;
   return Math.min(1, Math.max(0, value));
@@ -885,7 +885,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               height: `${laneHeight}px`,
               background: bar.color,
               borderColor: bar.color,
-              opacity: bar.isIdEvent ? idOpacity : 1,
+              opacity: bar.isIdEvent ? targetBarOpacity : 1,
               outline: bar.isIdEvent
                 ? `1px solid ${bar.borderColor}`
                 : 'none',
