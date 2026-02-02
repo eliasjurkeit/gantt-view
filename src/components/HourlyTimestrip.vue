@@ -21,7 +21,7 @@ const LABEL_HEIGHT = 24;
 const LEGEND_GAP = 25;
 const BAR_OFFSET = 12;
 const LANE_HEIGHT = 20;
-const LANE_GAP = 6;
+const DEFAULT_LANE_GAP = 6;
 const SUBLANE_GAP = 0;
 const MIN_BAR_WIDTH = 6;
 const PASTEL_PALETTE = [
@@ -120,6 +120,15 @@ const laneHeight = computed(() => {
   const value = Number(raw);
   if (!Number.isFinite(value)) return LANE_HEIGHT;
   return Math.min(60, Math.max(8, value));
+});
+
+const laneGap = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return DEFAULT_LANE_GAP;
+  const raw = header.laneGap;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return DEFAULT_LANE_GAP;
+  return Math.min(32, Math.max(0, value));
 });
 
 const targetBarOpacity = computed(() => {
@@ -673,11 +682,11 @@ const rowLayouts = computed(() => {
     const height =
       row.sublaneCount * (laneHeight.value + SUBLANE_GAP) - SUBLANE_GAP;
     const top = offset;
-    offset += height + LANE_GAP;
+    offset += height + laneGap.value;
     return { ...row, top, height };
   });
 
-  const contentHeight = layout.length ? offset - LANE_GAP : 0;
+  const contentHeight = layout.length ? offset - laneGap.value : 0;
 
   return { rows: layout, contentHeight, totals: rows };
 });
@@ -813,7 +822,7 @@ onBeforeUnmount(() => {
             :style="{
               height: `${row.height}px`,
               marginBottom:
-                index === sidebarRows.length - 1 ? '0px' : `${LANE_GAP}px`,
+                index === sidebarRows.length - 1 ? '0px' : `${laneGap}px`,
             }"
             :title="row.label"
           >

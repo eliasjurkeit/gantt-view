@@ -7,6 +7,7 @@ actualLabel: Ist-Zeit
 eventsLabel: Aufgaben
 scale: 10
 laneHeight: 14
+laneGap: 6
 dateLegendHeight: 30
 hourLegendHeight: 50
 targetBarOpacity: 0.5
