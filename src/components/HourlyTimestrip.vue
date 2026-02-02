@@ -19,6 +19,7 @@ const hourWidth = computed(() => {
 });
 const LABEL_HEIGHT = 24;
 const LEGEND_GAP = 25;
+const BAR_OFFSET = 12;
 const LANE_HEIGHT = 20;
 const LANE_GAP = 6;
 const MIN_BAR_WIDTH = 6;
@@ -469,10 +470,36 @@ const eventBars = computed((): EventBar[] => {
 
 const laneCount = computed(() => Math.max(1, eventBars.value.length));
 
+const dateLegendHeight = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return 18;
+  const raw = header.dateLegendHeight;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 18;
+  return Math.min(80, Math.max(10, value));
+});
+
+const hourLegendHeight = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return 36;
+  const raw = header.hourLegendHeight;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 36;
+  return Math.min(120, Math.max(16, value));
+});
+
+const legendStackHeight = computed(
+  () => dateLegendHeight.value + hourLegendHeight.value + LEGEND_GAP
+);
+
+const sidebarRowsOffset = computed(() =>
+  Math.max(0, legendStackHeight.value + BAR_OFFSET - LABEL_HEIGHT)
+);
+
 const totalHeight = computed(
   () =>
-    LABEL_HEIGHT +
-    LEGEND_GAP +
+    legendStackHeight.value +
+    BAR_OFFSET +
     laneCount.value * (LANE_HEIGHT + LANE_GAP) +
     12
 );
@@ -513,7 +540,10 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
       >
         <div
           class="gantt-sidebar-content"
-          :style="{ height: `${totalHeight}px`, paddingTop: `${LEGEND_GAP}px` }"
+          :style="{
+            height: `${totalHeight}px`,
+            paddingTop: `${sidebarRowsOffset}px`,
+          }"
         >
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
             Events
@@ -550,7 +580,11 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
     >
       <div
         class="timestrip"
-        :style="{ width: `${totalWidth}px` }"
+        :style="{
+          width: `${totalWidth}px`,
+          '--day-legend-height': `${dateLegendHeight}px`,
+          '--hour-label-top': `${dateLegendHeight + 4}px`,
+        }"
       >
         <div class="day-labels" :style="{ width: `${totalWidth}px` }">
           <div
@@ -580,8 +614,8 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               left: `${bar.left}px`,
               width: `${bar.width}px`,
               top: `${
-                LABEL_HEIGHT +
-                LEGEND_GAP +
+                legendStackHeight +
+                BAR_OFFSET +
                 bar.lane * (LANE_HEIGHT + LANE_GAP)
               }px`,
               height: `${LANE_HEIGHT}px`,
@@ -713,7 +747,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   position: absolute;
   top: 4px;
   left: 0;
-  height: 16px;
+  height: var(--day-legend-height, 18px);
   pointer-events: none;
   z-index: 2;
 }
@@ -765,7 +799,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   white-space: nowrap;
   font-family: system-ui, -apple-system, sans-serif;
   position: absolute;
-  top: 4px;
+  top: var(--hour-label-top, 4px);
   left: 4px;
   writing-mode: vertical-rl;
   text-orientation: mixed;
