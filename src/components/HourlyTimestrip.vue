@@ -220,14 +220,6 @@ const eventsLabel = computed(() => {
     : "Events";
 });
 
-const hoursUnitLabel = computed(() => {
-  const header = headerOptions.value;
-  const raw = header?.hoursUnitLabel;
-  return typeof raw === "string" && raw.trim().length > 0
-    ? raw.trim()
-    : "";
-});
-
 const skippedDays = computed(() => {
   const header = headerOptions.value;
   if (!header) return new Set<string>();
@@ -1066,9 +1058,6 @@ onBeforeUnmount(() => {
         </div>
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
             <span>{{ eventsLabel }}</span>
-            <span v-if="hoursUnitLabel" class="gantt-sidebar-smallprint">
-              {{ hoursUnitLabel }}
-            </span>
           </div>
           <div
             v-for="(row, index) in sidebarRows"
