@@ -903,7 +903,7 @@ const sectionBands = computed<SectionBand[]>(() => {
     .sort((a, b) => a.top - b.top);
 });
 
-const totalRowTopOffset = computed(() => rowLayouts.value.tailGap ?? 0);
+const totalRowTopOffset = computed(() => 0);
 
 const sidebarSectionBands = computed<SectionBand[]>(() => {
   const bands = new Map<
