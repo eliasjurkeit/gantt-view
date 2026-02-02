@@ -65,11 +65,20 @@ interface EventBar {
   groupKey: string;
   sublane: number;
   isIdEvent: boolean;
+  sectionName?: string;
 }
 
 interface DailyHourRange {
   startMinutes: number;
   endMinutes: number;
+}
+
+interface SectionBand {
+  title: string;
+  top: number;
+  height: number;
+  fill: string;
+  border: string;
 }
 
 const timeRange = computed(() => {
@@ -146,6 +155,15 @@ const targetBarOpacity = computed(() => {
   const raw = header.targetBarOpacity;
   const value = Number(raw);
   if (!Number.isFinite(value)) return 0.4;
+  return Math.min(1, Math.max(0, value));
+});
+
+const sectionOpacity = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return 0.12;
+  const raw = header.sectionOpacity;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 0.12;
   return Math.min(1, Math.max(0, value));
 });
 
@@ -334,6 +352,16 @@ const darkenHex = (hex: string, amount: number) => {
     .join("")}`;
 };
 
+const hexToRgb = (hex: string) => {
+  const normalized = hex.replace("#", "");
+  if (normalized.length !== 6) return null;
+  const num = parseInt(normalized, 16);
+  const r = (num >> 16) & 0xff;
+  const g = (num >> 8) & 0xff;
+  const b = num & 0xff;
+  return { r, g, b };
+};
+
 const getDailySegments = (day: DateTime) => {
   const base = dailyHourRange.value ?? { startMinutes: 0, endMinutes: 24 * 60 };
   const skip = skipHourRange.value;
@@ -495,6 +523,57 @@ const dayBackgrounds = computed(() =>
   }))
 );
 
+const sectionsInfo = computed(() => {
+  const transformed = markwhenStore.markwhen?.transformed;
+  const opacity = sectionOpacity.value; // dependency to recompute fills
+  if (!transformed) {
+    return {
+      eventSection: new Map<string, string>(),
+      sectionColors: new Map<string, { fill: string; border: string; base: string }>(),
+    };
+  }
+
+  const eventSection = new Map<string, string>();
+  const sectionColors = new Map<string, { fill: string; border: string; base: string }>();
+
+  const registerSection = (name: string) => {
+    if (sectionColors.has(name)) return sectionColors.get(name)!;
+    const colorIndex =
+      PASTEL_PALETTE.length === 0 ? 0 : Math.abs(hashString(name)) % PASTEL_PALETTE.length;
+    const base = PASTEL_PALETTE[colorIndex] ?? "#A5D8FF";
+    const rgb = hexToRgb(base) ?? { r: 148, g: 163, b: 184 };
+    const fill = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
+    const border = base;
+    const entry = { fill, border, base };
+    sectionColors.set(name, entry);
+    return entry;
+  };
+
+  const walk = (node: any, path: number[], currentSection?: string) => {
+    if (!node) return;
+    const isSection = !isEvent(node) && node.style === "section";
+    const sectionName = isSection ? node.title || "Section" : currentSection;
+
+    if (isEvent(node)) {
+      if (sectionName) {
+        eventSection.set(path.join("."), sectionName);
+        registerSection(sectionName);
+      }
+      return;
+    }
+
+    if (Array.isArray(node.children)) {
+      node.children.forEach((child: any, idx: number) =>
+        walk(child, [...path, idx], sectionName)
+      );
+    }
+  };
+
+  walk(transformed, []);
+
+  return { eventSection, sectionColors };
+});
+
 const eventBars = computed((): EventBar[] => {
   const transformed = markwhenStore.markwhen?.transformed;
   if (!transformed || !timeRange.value) {
@@ -502,11 +581,12 @@ const eventBars = computed((): EventBar[] => {
   }
 
   const { start } = timeRange.value;
+  const eventSection = sectionsInfo.value.eventSection;
   const bars: Array<
     EventBar & { startTime: DateTime; endTime: DateTime }
   > = [];
 
-  for (const { eventy } of iter(transformed)) {
+  for (const { eventy, path } of iter(transformed)) {
     if (!isEvent(eventy)) continue;
     const dr = toDateRange(eventy.dateRangeIso);
     const startTime = dr.fromDateTime;
@@ -535,6 +615,7 @@ const eventBars = computed((): EventBar[] => {
       eventy.id ??
       title;
     const groupKey = String(groupKeyRaw);
+    const sectionName = Array.isArray(path) ? eventSection.get(path.join(".")) : undefined;
     const rangeLabel =
       startTime.hasSame(endTime, "day")
         ? `${startTime.toFormat("HH:mm")}–${endTime.toFormat("HH:mm")}`
@@ -560,6 +641,7 @@ const eventBars = computed((): EventBar[] => {
       groupKey,
       sublane: 0,
       isIdEvent: hasId,
+      sectionName,
       startTime,
       endTime,
     });
@@ -647,6 +729,8 @@ const rowLayouts = computed(() => {
       color: string;
       borderColor: string;
       totals: number[];
+      sectionName?: string;
+      sectionHits: Record<string, number>;
     }
   >();
 
@@ -657,6 +741,8 @@ const rowLayouts = computed(() => {
       color: bar.color,
       borderColor: bar.borderColor,
       totals: [],
+      sectionName: undefined,
+      sectionHits: {},
     };
     entry.lane = bar.lane;
     entry.sublaneCount = Math.max(entry.sublaneCount, bar.sublane + 1);
@@ -666,6 +752,16 @@ const rowLayouts = computed(() => {
     const duration = Number(bar.durationHours);
     if (Number.isFinite(duration)) {
       entry.totals[bar.sublane] += duration;
+    }
+    if (bar.sectionName) {
+      entry.sectionHits[bar.sectionName] =
+        (entry.sectionHits[bar.sectionName] ?? 0) + 1;
+      const currentCount = entry.sectionName
+        ? entry.sectionHits[entry.sectionName] ?? 0
+        : 0;
+      if (entry.sectionHits[bar.sectionName] > currentCount) {
+        entry.sectionName = bar.sectionName;
+      }
     }
     rowsMap.set(bar.groupKey, entry);
   }
@@ -678,11 +774,12 @@ const rowLayouts = computed(() => {
       sublaneCount: value.sublaneCount,
       color: value.color,
       borderColor: value.borderColor,
+      sectionName: value.sectionName,
       totals: value.totals.map((total) =>
         Math.round(total * 10) % 10 === 0
           ? `${Math.round(total)}`
           : total.toFixed(1)
-      ),
+     ),
     }))
     .sort((a, b) => a.lane - b.lane);
 
@@ -724,6 +821,40 @@ const rowTopByKey = computed(() => {
     map.set(row.key, row.top);
   });
   return map;
+});
+
+const sectionBands = computed<SectionBand[]>(() => {
+  const bands = new Map<
+    string,
+    { title: string; top: number; bottom: number; fill: string; border: string }
+  >();
+  const offset = legendStackHeight.value + BAR_OFFSET;
+
+  rowLayouts.value.rows.forEach((row) => {
+    if (!row.sectionName) return;
+    const colors = sectionsInfo.value.sectionColors.get(row.sectionName);
+    const fill = colors?.fill ?? "rgba(148, 163, 184, 0.12)";
+    const border = colors?.border ?? "rgba(148, 163, 184, 0.4)";
+    const top = offset + row.top;
+    const bottom = top + row.height;
+    const existing = bands.get(row.sectionName);
+    if (!existing) {
+      bands.set(row.sectionName, { title: row.sectionName, top, bottom, fill, border });
+    } else {
+      existing.top = Math.min(existing.top, top);
+      existing.bottom = Math.max(existing.bottom, bottom);
+    }
+  });
+
+  return Array.from(bands.values())
+    .map((band) => ({
+      title: band.title,
+      top: band.top,
+      height: band.bottom - band.top,
+      fill: band.fill,
+      border: band.border,
+    }))
+    .sort((a, b) => a.top - b.top);
 });
 
 const dateLegendHeight = computed(() => {
@@ -892,6 +1023,25 @@ onBeforeUnmount(() => {
           '--hour-label-top': `${dateLegendHeight + 4}px`,
         }"
       >
+        <div
+          class="section-layer"
+          :style="{ width: `${totalWidth}px`, height: `${trackHeight}px` }"
+        >
+          <div
+            v-for="(section, index) in sectionBands"
+            :key="index"
+            class="section-block"
+            :style="{
+              top: `${section.top}px`,
+              height: `${section.height}px`,
+              width: `${totalWidth}px`,
+              background: section.fill,
+              borderTop: `1px solid ${section.border}`,
+              borderBottom: `1px solid ${section.border}`,
+            }"
+            :title="section.title"
+          ></div>
+        </div>
         <div
           class="day-backgrounds"
           :style="{ width: `${totalWidth}px`, height: `${trackHeight}px` }"
@@ -1156,6 +1306,22 @@ onBeforeUnmount(() => {
 
 .gantt-root.dark .day-background.shaded {
   background: rgba(255, 255, 255, 0.04);
+}
+
+.section-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.section-block {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .day-labels {
