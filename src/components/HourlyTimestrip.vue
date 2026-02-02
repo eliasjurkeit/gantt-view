@@ -7,12 +7,24 @@ import { useMarkwhenStore } from "../Markwhen/markwhenStore";
 const markwhenStore = useMarkwhenStore();
 
 const HOUR_WIDTH = 60; // pixels per hour
+const LABEL_HEIGHT = 24;
+const LANE_HEIGHT = 20;
+const LANE_GAP = 6;
+const MIN_BAR_WIDTH = 6;
 
 interface HourMarker {
   hour: number;
   dateTime: DateTime;
   label: string;
   isStartOfDay: boolean;
+}
+
+interface EventBar {
+  title: string;
+  left: number;
+  width: number;
+  lane: number;
+  rangeLabel: string;
 }
 
 const timeRange = computed(() => {
@@ -81,6 +93,77 @@ const hourMarkers = computed((): HourMarker[] => {
 
 const totalWidth = computed(() => hourMarkers.value.length * HOUR_WIDTH);
 
+const eventBars = computed((): EventBar[] => {
+  const transformed = markwhenStore.markwhen?.transformed;
+  if (!transformed || !timeRange.value) {
+    return [];
+  }
+
+  const { start } = timeRange.value;
+  const bars: Array<
+    EventBar & { startTime: DateTime; endTime: DateTime }
+  > = [];
+
+  for (const { eventy } of iter(transformed)) {
+    if (!isEvent(eventy)) continue;
+    const dr = toDateRange(eventy.dateRangeIso);
+    const startTime = dr.fromDateTime;
+    const endTime = dr.toDateTime;
+    const durationHours = Math.max(
+      0,
+      endTime.diff(startTime, "hours").hours
+    );
+    const left = startTime.diff(start, "hours").hours * HOUR_WIDTH;
+    const width = Math.max(durationHours * HOUR_WIDTH, MIN_BAR_WIDTH);
+    const title =
+      eventy.firstLine?.restTrimmed ||
+      eventy.firstLine?.rest ||
+      "Event";
+    const rangeLabel =
+      startTime.hasSame(endTime, "day")
+        ? `${startTime.toFormat("HH:mm")}–${endTime.toFormat("HH:mm")}`
+        : `${startTime.toFormat("MMM d HH:mm")}–${endTime.toFormat(
+            "MMM d HH:mm"
+          )}`;
+
+    bars.push({
+      title,
+      left,
+      width,
+      lane: 0,
+      rangeLabel,
+      startTime,
+      endTime,
+    });
+  }
+
+  bars.sort((a, b) => +a.startTime - +b.startTime);
+
+  const laneEndTimes: DateTime[] = [];
+  for (const bar of bars) {
+    let laneIndex = laneEndTimes.findIndex(
+      (laneEnd) => +bar.startTime >= +laneEnd
+    );
+    if (laneIndex === -1) {
+      laneIndex = laneEndTimes.length;
+      laneEndTimes.push(bar.endTime);
+    } else {
+      laneEndTimes[laneIndex] = bar.endTime;
+    }
+    bar.lane = laneIndex;
+  }
+
+  return bars.map(({ startTime, endTime, ...rest }) => rest);
+});
+
+const laneCount = computed(() =>
+  Math.max(1, eventBars.value.reduce((max, bar) => Math.max(max, bar.lane + 1), 0))
+);
+
+const totalHeight = computed(
+  () => LABEL_HEIGHT + laneCount.value * (LANE_HEIGHT + LANE_GAP) + 12
+);
+
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 </script>
 
@@ -102,6 +185,23 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
       >
         <span class="hour-label">{{ marker.label }}</span>
       </div>
+      <div class="events-layer" :style="{ height: `${totalHeight}px` }">
+        <div
+          v-for="(bar, index) in eventBars"
+          :key="index"
+          class="event-bar"
+          :style="{
+            left: `${bar.left}px`,
+            width: `${bar.width}px`,
+            top: `${LABEL_HEIGHT + bar.lane * (LANE_HEIGHT + LANE_GAP)}px`,
+            height: `${LANE_HEIGHT}px`,
+          }"
+          :title="`${bar.title} (${bar.rangeLabel})`"
+        >
+          <span class="event-title">{{ bar.title }}</span>
+        </div>
+      </div>
+      <div class="events-spacer" :style="{ height: `${totalHeight}px` }"></div>
     </div>
   </div>
 </template>
@@ -110,7 +210,7 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 .timestrip-container {
   width: 100%;
   height: 100%;
-  overflow-x: auto;
+  overflow: auto;
   background-color: #f8fafc;
 }
 
@@ -121,6 +221,7 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 .timestrip {
   display: flex;
   flex-direction: row;
+  position: relative;
   height: 100%;
 }
 
@@ -132,6 +233,7 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
   border-left: 1px dashed #cbd5e1;
   padding-left: 4px;
   box-sizing: border-box;
+  height: 100%;
 }
 
 .dark .hour-marker {
@@ -166,5 +268,47 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 
 .dark .day-start .hour-label {
   color: #d4d4d8;
+}
+
+.events-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.event-bar {
+  position: absolute;
+  background: linear-gradient(90deg, #60a5fa, #3b82f6);
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+  padding: 2px 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.dark .event-bar {
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  border-color: #0284c7;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
+}
+
+.event-title {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #eff6ff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  display: block;
+}
+
+.events-spacer {
+  flex-shrink: 0;
+  width: 1px;
+  opacity: 0;
 }
 </style>
