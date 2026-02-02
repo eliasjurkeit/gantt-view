@@ -857,6 +857,40 @@ const sectionBands = computed<SectionBand[]>(() => {
     .sort((a, b) => a.top - b.top);
 });
 
+const sidebarSectionBands = computed<SectionBand[]>(() => {
+  const bands = new Map<
+    string,
+    { title: string; top: number; bottom: number; fill: string; border: string }
+  >();
+  const offset = sidebarRowsOffset.value + LABEL_HEIGHT;
+
+  rowLayouts.value.rows.forEach((row) => {
+    if (!row.sectionName) return;
+    const colors = sectionsInfo.value.sectionColors.get(row.sectionName);
+    const fill = colors?.fill ?? "rgba(148, 163, 184, 0.12)";
+    const border = colors?.border ?? "rgba(148, 163, 184, 0.4)";
+    const top = offset + row.top;
+    const bottom = top + row.height;
+    const existing = bands.get(row.sectionName);
+    if (!existing) {
+      bands.set(row.sectionName, { title: row.sectionName, top, bottom, fill, border });
+    } else {
+      existing.top = Math.min(existing.top, top);
+      existing.bottom = Math.max(existing.bottom, bottom);
+    }
+  });
+
+  return Array.from(bands.values())
+    .map((band) => ({
+      title: band.title,
+      top: band.top,
+      height: band.bottom - band.top,
+      fill: band.fill,
+      border: band.border,
+    }))
+    .sort((a, b) => a.top - b.top);
+});
+
 const dateLegendHeight = computed(() => {
   const header = headerOptions.value;
   if (!header) return 18;
@@ -949,6 +983,24 @@ onBeforeUnmount(() => {
             paddingTop: `${sidebarRowsOffset}px`,
           }"
         >
+          <div
+            v-if="sidebarSectionBands.length"
+            class="gantt-sidebar-sections"
+            :style="{ height: `${totalHeight}px` }"
+          >
+            <div
+              v-for="(section, index) in sidebarSectionBands"
+              :key="index"
+              class="gantt-sidebar-section-band"
+              :style="{
+                top: `${section.top}px`,
+                height: `${section.height}px`,
+                background: section.fill,
+                borderTop: `1px solid ${section.border}`,
+                borderBottom: `1px solid ${section.border}`,
+              }"
+            ></div>
+          </div>
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
             <span>{{ eventsLabel }}</span>
             <span v-if="hoursUnitLabel" class="gantt-sidebar-smallprint">
@@ -1144,6 +1196,21 @@ onBeforeUnmount(() => {
 
 .gantt-sidebar-content {
   width: 100%;
+  position: relative;
+}
+
+.gantt-sidebar-sections {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gantt-sidebar-section-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
 }
 
 .gantt-sidebar-header {
