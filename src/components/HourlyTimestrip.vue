@@ -964,6 +964,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   pointer-events: auto;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .dark .event-bar {
