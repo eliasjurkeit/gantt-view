@@ -348,7 +348,9 @@ const hourMarkers = computed((): HourMarker[] => {
         markers.push({
           hour: markerTime.hour,
           dateTime: markerTime,
-          label: markerTime.toFormat("HH:mm"),
+          label: `${markerTime.toFormat("HH:mm")} - ${markerEnd.toFormat(
+            "HH:mm"
+          )}`,
           isStartOfDay: minutes === firstSegmentStart,
           spanHours,
         });
