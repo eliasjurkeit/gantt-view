@@ -60,6 +60,7 @@ interface EventBar {
   rangeLabel: string;
   color: string;
   borderColor: string;
+  durationHours: string;
 }
 
 interface DailyHourRange {
@@ -434,6 +435,11 @@ const eventBars = computed((): EventBar[] => {
     const endTime = dr.toDateTime;
     const durationMinutes = visibleMinutesBetween(startTime, endTime);
     if (durationMinutes <= 0) continue;
+    const durationHoursValue = durationMinutes / 60;
+    const durationHours =
+      Math.round(durationHoursValue * 10) % 10 === 0
+        ? `${Math.round(durationHoursValue)}`
+        : durationHoursValue.toFixed(1);
     const left =
       (visibleMinutesBetween(start, startTime) / 60) * hourWidth.value;
     const width = Math.max(
@@ -466,6 +472,7 @@ const eventBars = computed((): EventBar[] => {
       rangeLabel,
       color,
       borderColor,
+      durationHours,
       startTime,
       endTime,
     });
@@ -635,6 +642,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
           }"
           :title="`${bar.title} (${bar.rangeLabel})`"
         >
+          <span class="event-duration">{{ bar.durationHours }}</span>
         </div>
       </div>
         <div class="events-spacer" :style="{ height: `${totalHeight}px` }"></div>
@@ -839,10 +847,19 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   box-sizing: border-box;
   overflow: hidden;
   pointer-events: auto;
+  display: flex;
+  align-items: center;
 }
 
 .dark .event-bar {
   box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
+}
+
+.event-duration {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
 }
 
 
