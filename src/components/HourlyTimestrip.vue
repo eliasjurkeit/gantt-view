@@ -846,7 +846,9 @@ const sectionBands = computed<SectionBand[]>(() => {
     { title: string; minTop: number; maxBottom: number; fill: string; border: string }
   >();
   const rowAreaOffset = legendStackHeight.value + BAR_OFFSET;
-  const rowAreaBottom = rowAreaOffset + rowLayouts.value.contentHeight;
+  const bandAreaBottom =
+    rowAreaOffset +
+    Math.max(0, rowLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
 
   rowLayouts.value.rows.forEach((row) => {
     if (!row.sectionName) return;
@@ -875,7 +877,7 @@ const sectionBands = computed<SectionBand[]>(() => {
       const paddedTop = band.minTop - sectionPadding.value;
       const paddedBottom = band.maxBottom + sectionPadding.value;
       const top = Math.max(0, paddedTop);
-      const bottom = Math.min(rowAreaBottom, paddedBottom);
+      const bottom = Math.min(bandAreaBottom, paddedBottom);
       return {
         title: band.title,
         top,
@@ -895,7 +897,9 @@ const sidebarSectionBands = computed<SectionBand[]>(() => {
     { title: string; minTop: number; maxBottom: number; fill: string; border: string }
   >();
   const rowAreaOffset = sidebarRowsOffset.value + LABEL_HEIGHT;
-  const rowAreaBottom = rowAreaOffset + rowLayouts.value.contentHeight;
+  const bandAreaBottom =
+    rowAreaOffset +
+    Math.max(0, rowLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
 
   rowLayouts.value.rows.forEach((row) => {
     if (!row.sectionName) return;
@@ -924,7 +928,7 @@ const sidebarSectionBands = computed<SectionBand[]>(() => {
       const paddedTop = band.minTop - sectionPadding.value;
       const paddedBottom = band.maxBottom + sectionPadding.value;
       const top = Math.max(0, paddedTop);
-      const bottom = Math.min(rowAreaBottom, paddedBottom);
+      const bottom = Math.min(bandAreaBottom, paddedBottom);
       return {
         title: band.title,
         top,
@@ -1046,7 +1050,9 @@ onBeforeUnmount(() => {
               borderLeft: `1px solid ${section.border}`,
               borderRight: `1px solid ${section.border}`,
             }"
-          ></div>
+          >
+            <span class="gantt-sidebar-section-label">{{ section.title }}</span>
+          </div>
         </div>
           <div
             v-for="(row, index) in sidebarRows"
@@ -1259,6 +1265,17 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   box-sizing: border-box;
+  padding: 6px 8px;
+}
+
+.gantt-sidebar-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.gantt-root.dark .gantt-sidebar-section-label {
+  color: #e2e8f0;
 }
 
 .gantt-sidebar-header {
