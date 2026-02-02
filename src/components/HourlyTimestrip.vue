@@ -297,10 +297,10 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
           <span class="hour-label">{{ marker.label }}</span>
         </div>
         <div class="events-layer" :style="{ height: `${totalHeight}px` }">
-          <div
-            v-for="(bar, index) in eventBars"
-            :key="index"
-            class="event-bar"
+        <div
+          v-for="(bar, index) in eventBars"
+          :key="index"
+          class="event-bar"
             :style="{
               left: `${bar.left}px`,
               width: `${bar.width}px`,
@@ -308,12 +308,11 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               height: `${LANE_HEIGHT}px`,
               background: bar.color,
               borderColor: bar.borderColor,
-            }"
-            :title="`${bar.title} (${bar.rangeLabel})`"
-          >
-            <span class="event-title">{{ bar.title }}</span>
-          </div>
+          }"
+          :title="`${bar.title} (${bar.rangeLabel})`"
+        >
         </div>
+      </div>
         <div class="events-spacer" :style="{ height: `${totalHeight}px` }"></div>
       </div>
     </div>
@@ -491,19 +490,6 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
 }
 
-.event-title {
-  font-size: 11px;
-  line-height: 1.3;
-  color: #0f172a;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  display: block;
-}
-
-.dark .event-title {
-  color: #0f172a;
-}
 
 .events-spacer {
   flex-shrink: 0;
