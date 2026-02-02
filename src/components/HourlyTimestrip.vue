@@ -24,6 +24,7 @@ const LANE_HEIGHT = 20;
 const DEFAULT_LANE_GAP = 6;
 const SUBLANE_GAP = 0;
 const MIN_BAR_WIDTH = 6;
+const DEFAULT_SECTION_GAP = 12;
 const PASTEL_PALETTE = [
   "#A5D8FF",
   "#B8F2E6",
@@ -165,6 +166,28 @@ const sectionOpacity = computed(() => {
   const value = Number(raw);
   if (!Number.isFinite(value)) return 0.12;
   return Math.min(1, Math.max(0, value));
+});
+
+const sectionPadding = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return 4;
+  const raw = header.sectionPadding;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 4;
+  return Math.min(32, Math.max(0, value));
+});
+
+const effectiveSectionPadding = computed(() =>
+  Math.max(sectionPadding.value, laneHeight.value)
+);
+
+const sectionGap = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return DEFAULT_SECTION_GAP;
+  const raw = header.sectionGap;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return DEFAULT_SECTION_GAP;
+  return Math.min(48, Math.max(0, value));
 });
 
 const targetLabel = computed(() => {
@@ -780,19 +803,25 @@ const rowLayouts = computed(() => {
           ? `${Math.round(total)}`
           : total.toFixed(1)
      ),
-    }))
+   }))
     .sort((a, b) => a.lane - b.lane);
 
   let offset = 0;
-  const layout = rows.map((row) => {
+  const layout = rows.map((row, index) => {
     const height =
       row.sublaneCount * (laneHeight.value + SUBLANE_GAP) - SUBLANE_GAP;
     const top = offset;
-    offset += height + laneGap.value;
-    return { ...row, top, height };
+    const gapToNext =
+      index === rows.length - 1
+        ? 0
+        : laneGap.value +
+          (row.sectionName === rows[index + 1].sectionName ? 0 : sectionGap.value);
+    offset += height + gapToNext;
+    return { ...row, top, height, nextGap: gapToNext };
   });
 
-  const contentHeight = layout.length ? offset - laneGap.value : 0;
+  const lastGap = layout.length ? layout[layout.length - 1].nextGap : 0;
+  const contentHeight = layout.length ? offset - lastGap : 0;
 
   return { rows: layout, contentHeight, totals: rows };
 });
@@ -1016,7 +1045,7 @@ onBeforeUnmount(() => {
             :style="{
               height: `${row.height}px`,
               marginBottom:
-                index === sidebarRows.length - 1 ? '0px' : `${laneGap}px`,
+                index === sidebarRows.length - 1 ? '0px' : `${row.nextGap}px`,
             }"
             :title="row.label"
           >
