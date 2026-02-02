@@ -11,7 +11,7 @@ const MARKER_HOURS = 2;
 const hourWidth = computed(() => {
   const header = headerOptions.value;
   if (!header) return HOUR_WIDTH;
-  const raw = header.hourWidth;
+  const raw = header.scale;
   if (raw === undefined || raw === null) return HOUR_WIDTH;
   const value = Number(raw);
   if (!Number.isFinite(value)) return HOUR_WIDTH;
@@ -104,7 +104,7 @@ const headerOptions = computed(() => {
 const skippedDays = computed(() => {
   const header = headerOptions.value;
   if (!header) return new Set<string>();
-  const raw = header.skipDays;
+  const raw = header.skipDates;
   if (!Array.isArray(raw)) return new Set<string>();
 
   const values = raw
