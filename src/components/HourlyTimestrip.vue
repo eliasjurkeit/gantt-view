@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { DateTime } from "luxon";
 import { iter, isEvent, toDateRange } from "@markwhen/parser";
 import { useMarkwhenStore } from "../Markwhen/markwhenStore";
@@ -470,6 +470,13 @@ const dayLabels = computed((): DayLabel[] => {
   return labels;
 });
 
+const dayBackgrounds = computed(() =>
+  dayLabels.value.map((label, index) => ({
+    ...label,
+    isShaded: index % 2 === 1,
+  }))
+);
+
 const eventBars = computed((): EventBar[] => {
   const transformed = markwhenStore.markwhen?.transformed;
   if (!transformed || !timeRange.value) {
@@ -740,6 +747,10 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 const sidebarScrollRef = ref<HTMLDivElement | null>(null);
 const timestripScrollRef = ref<HTMLDivElement | null>(null);
 const isSyncingScroll = ref(false);
+const viewportHeight = ref(0);
+const trackHeight = computed(() =>
+  Math.max(totalHeight.value, viewportHeight.value)
+);
 
 const syncScroll = (source: "sidebar" | "timestrip") => {
   if (isSyncingScroll.value) return;
@@ -759,6 +770,19 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
     isSyncingScroll.value = false;
   });
 };
+
+const updateViewportHeight = () => {
+  viewportHeight.value = timestripScrollRef.value?.clientHeight ?? 0;
+};
+
+onMounted(() => {
+  updateViewportHeight();
+  window.addEventListener("resize", updateViewportHeight);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateViewportHeight);
+});
 </script>
 
 <template>
@@ -845,10 +869,23 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
         class="timestrip"
         :style="{
           width: `${totalWidth}px`,
+          height: `${trackHeight}px`,
           '--day-legend-height': `${dateLegendHeight}px`,
           '--hour-label-top': `${dateLegendHeight + 4}px`,
         }"
       >
+        <div
+          class="day-backgrounds"
+          :style="{ width: `${totalWidth}px`, height: `${trackHeight}px` }"
+        >
+          <div
+            v-for="(day, index) in dayBackgrounds"
+            :key="index"
+            class="day-background"
+            :class="{ shaded: day.isShaded }"
+            :style="{ left: `${day.left}px`, width: `${day.width}px` }"
+          ></div>
+        </div>
         <div class="day-labels" :style="{ width: `${totalWidth}px` }">
           <div
             v-for="(label, index) in dayLabels"
@@ -860,19 +897,19 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
           </div>
         </div>
         <div
-        v-for="(marker, index) in hourMarkers"
-        :key="index"
-        class="hour-marker"
-        :class="{ 'day-start': marker.isStartOfDay }"
-        :style="{ width: `${marker.spanHours * hourWidth}px` }"
-      >
-        <span class="hour-label">{{ marker.label }}</span>
-      </div>
-        <div class="events-layer" :style="{ height: `${totalHeight}px` }">
-        <div
-          v-for="(bar, index) in eventBars"
+          v-for="(marker, index) in hourMarkers"
           :key="index"
-          class="event-bar"
+          class="hour-marker"
+          :class="{ 'day-start': marker.isStartOfDay }"
+          :style="{ width: `${marker.spanHours * hourWidth}px` }"
+        >
+          <span class="hour-label">{{ marker.label }}</span>
+        </div>
+        <div class="events-layer" :style="{ height: `${trackHeight}px` }">
+          <div
+            v-for="(bar, index) in eventBars"
+            :key="index"
+            class="event-bar"
             :style="{
               left: `${bar.left}px`,
               width: `${bar.width}px`,
@@ -892,13 +929,13 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               backgroundImage: bar.isIdEvent
                 ? `repeating-linear-gradient(45deg, ${bar.borderColor} 0 1px, transparent 1px 6px)`
                 : 'none',
-          }"
-          :title="`${bar.title} (${bar.rangeLabel})`"
-        >
-          <span class="event-duration">{{ bar.durationHours }}</span>
+            }"
+            :title="`${bar.title} (${bar.rangeLabel})`"
+          >
+            <span class="event-duration">{{ bar.durationHours }}</span>
+          </div>
         </div>
-      </div>
-        <div class="events-spacer" :style="{ height: `${totalHeight}px` }"></div>
+        <div class="events-spacer" :style="{ height: `${trackHeight}px` }"></div>
       </div>
     </div>
   </div>
@@ -1077,6 +1114,29 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   flex-direction: row;
   position: relative;
   height: 100%;
+}
+
+.day-backgrounds {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.day-background {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+.day-background.shaded {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.gantt-root.dark .day-background.shaded {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .day-labels {
