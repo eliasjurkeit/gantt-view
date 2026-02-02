@@ -543,7 +543,7 @@ const sectionsInfo = computed(() => {
     const base = PASTEL_PALETTE[colorIndex] ?? "#A5D8FF";
     const rgb = hexToRgb(base) ?? { r: 148, g: 163, b: 184 };
     const fill = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
-    const border = base;
+    const border = darkenHex(base, 28);
     const entry = { fill, border, base };
     sectionColors.set(name, entry);
     return entry;
@@ -989,18 +989,20 @@ onBeforeUnmount(() => {
             :style="{ height: `${totalHeight}px` }"
           >
             <div
-              v-for="(section, index) in sidebarSectionBands"
-              :key="index"
-              class="gantt-sidebar-section-band"
-              :style="{
-                top: `${section.top}px`,
-                height: `${section.height}px`,
-                background: section.fill,
-                borderTop: `1px solid ${section.border}`,
-                borderBottom: `1px solid ${section.border}`,
-              }"
-            ></div>
-          </div>
+            v-for="(section, index) in sidebarSectionBands"
+            :key="index"
+            class="gantt-sidebar-section-band"
+            :style="{
+              top: `${section.top}px`,
+              height: `${section.height}px`,
+              background: section.fill,
+              borderTop: `1px solid ${section.border}`,
+              borderBottom: `1px solid ${section.border}`,
+              borderLeft: `1px solid ${section.border}`,
+              borderRight: `1px solid ${section.border}`,
+            }"
+          ></div>
+        </div>
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
             <span>{{ eventsLabel }}</span>
             <span v-if="hoursUnitLabel" class="gantt-sidebar-smallprint">
@@ -1090,6 +1092,8 @@ onBeforeUnmount(() => {
               background: section.fill,
               borderTop: `1px solid ${section.border}`,
               borderBottom: `1px solid ${section.border}`,
+              borderLeft: `1px solid ${section.border}`,
+              borderRight: `1px solid ${section.border}`,
             }"
             :title="section.title"
           ></div>
