@@ -41,14 +41,14 @@ id: task2
 for: task2
 endSection
 
-section test
+section Initialisierung
 2026-01-19 15:00 / 2026-02-03 17:00:
 id: task3
 2026-02-03 15:00 / 2026-02-03 17:00:
 for: task3
 endSection
 
-section hello
+section Konzept
 2026-01-19 15:00 / 2026-02-03 17:00:
 id: task4
 2026-01-19 15:00 / 2026-02-03 17:00:
@@ -59,3 +59,13 @@ id: task5
 2026-01-19 15:00 / 2026-02-03 17:00:
 for: task5
 endSection
+
+2026-01-19 15:00 / 2026-02-03 17:00:
+id: task6
+2026-01-19 15:00 / 2026-02-03 17:00:
+for: task6
+
+2026-01-19 15:00 / 2026-02-03 17:00:
+id: task7
+2026-01-19 15:00 / 2026-02-03 17:00:
+for: task7

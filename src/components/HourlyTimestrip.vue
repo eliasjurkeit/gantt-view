@@ -767,9 +767,9 @@ const eventBars = computed((): EventBar[] => {
           "#A5D8FF";
 
     lanes.forEach((laneIdx, idx) => {
-      const tint = Math.min(0.3, idx * 0.07);
-      const color = mixHex(base, "#ffffff", tint);
-      const borderColor = darkenHex(base, 28);
+      const factor = Math.min(0.6, 0.25 + idx * 0.15);
+      const color = mixHex(base, "#ffffff", factor);
+      const borderColor = darkenHex(base, Math.round(28 + idx * 6));
       laneColors.set(laneIdx, { color, borderColor });
     });
   });
