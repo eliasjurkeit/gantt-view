@@ -800,10 +800,11 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   font-family: system-ui, -apple-system, sans-serif;
   position: absolute;
   top: var(--hour-label-top, 4px);
-  left: 4px;
+  left: 50%;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   display: inline-block;
+  transform: translateX(-50%);
 }
 
 .dark .hour-label {
