@@ -163,6 +163,14 @@ const eventsLabel = computed(() => {
     : "Events";
 });
 
+const smallprint = computed(() => {
+  const header = headerOptions.value;
+  const raw = header?.smallprint;
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : "";
+});
+
 const skippedDays = computed(() => {
   const header = headerOptions.value;
   if (!header) return new Set<string>();
@@ -769,7 +777,10 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
           }"
         >
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
-            {{ eventsLabel }}
+            <span>{{ eventsLabel }}</span>
+            <span v-if="smallprint" class="gantt-sidebar-smallprint">
+              {{ smallprint }}
+            </span>
           </div>
           <div
             v-for="(row, index) in sidebarRows"
@@ -932,6 +943,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 .gantt-sidebar-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 12px;
   font-size: 12px;
   font-weight: 600;
@@ -947,6 +959,18 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   color: #e2e8f0;
   background: rgba(39, 39, 42, 0.95);
   border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+
+.gantt-sidebar-smallprint {
+  font-size: 10px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gantt-root.dark .gantt-sidebar-smallprint {
+  color: #94a3b8;
 }
 
 .gantt-sidebar-row {
