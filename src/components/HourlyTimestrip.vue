@@ -637,6 +637,8 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   padding-left: 4px;
   box-sizing: border-box;
   height: 100%;
+  position: relative;
+  overflow: visible;
 }
 
 .dark .hour-marker {
@@ -658,6 +660,12 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   color: #64748b;
   white-space: nowrap;
   font-family: system-ui, -apple-system, sans-serif;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  display: inline-block;
 }
 
 .dark .hour-label {
