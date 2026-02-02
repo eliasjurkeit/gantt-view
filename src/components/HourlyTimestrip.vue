@@ -159,6 +159,12 @@ const targetBarOpacity = computed(() => {
   return Math.min(1, Math.max(0, value));
 });
 
+const clampFontSize = (raw: unknown, fallback: number) => {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(32, Math.max(8, value));
+};
+
 const sectionOpacity = computed(() => {
   const header = headerOptions.value;
   if (!header) return 0.12;
@@ -168,14 +174,19 @@ const sectionOpacity = computed(() => {
   return Math.min(1, Math.max(0, value));
 });
 
+const sectionTitleFontSize = computed(() =>
+  clampFontSize(headerOptions.value?.sectionTitleFontSize, 12)
+);
+
 // Padding inside a section between its outer lanes and the section border.
 const sectionPadding = computed(() => {
   const header = headerOptions.value;
-  if (!header) return 8;
+  const minPadding = sectionTitleFontSize.value + 6;
+  if (!header) return minPadding;
   const raw = header.sectionPadding;
   const value = Number(raw);
-  if (!Number.isFinite(value)) return 8;
-  return Math.min(64, Math.max(0, value));
+  if (!Number.isFinite(value)) return minPadding;
+  return Math.min(64, Math.max(minPadding, value));
 });
 
 // Extra gap applied only between different sections (measured from the section border).
@@ -1051,7 +1062,14 @@ onBeforeUnmount(() => {
               borderRight: `1px solid ${section.border}`,
             }"
           >
-            <span class="gantt-sidebar-section-label">{{ section.title }}</span>
+            <span
+              class="gantt-sidebar-section-label"
+              :style="{
+                fontSize: `${sectionTitleFontSize}px`,
+              }"
+            >
+              {{ section.title }}
+            </span>
           </div>
         </div>
           <div
@@ -1266,12 +1284,18 @@ onBeforeUnmount(() => {
   right: 0;
   box-sizing: border-box;
   padding: 6px 8px;
+  z-index: 0;
 }
 
 .gantt-sidebar-section-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #1f2937;
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .gantt-root.dark .gantt-sidebar-section-label {
