@@ -11,6 +11,20 @@ const LABEL_HEIGHT = 24;
 const LANE_HEIGHT = 20;
 const LANE_GAP = 6;
 const MIN_BAR_WIDTH = 6;
+const PASTEL_PALETTE = [
+  "#A5D8FF",
+  "#B8F2E6",
+  "#FFD6A5",
+  "#FFCAD4",
+  "#CDB4DB",
+  "#FFE5A3",
+  "#BDE0FE",
+  "#CDEAC0",
+  "#FBC4AB",
+  "#D7E3FC",
+  "#E2F0CB",
+  "#FDE2E4",
+];
 
 interface HourMarker {
   hour: number;
@@ -25,6 +39,8 @@ interface EventBar {
   width: number;
   lane: number;
   rangeLabel: string;
+  color: string;
+  borderColor: string;
 }
 
 const timeRange = computed(() => {
@@ -58,6 +74,27 @@ const timeRange = computed(() => {
     end: latestTime,
   };
 });
+
+const hashString = (value: string) => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const darkenHex = (hex: string, amount: number) => {
+  const normalized = hex.replace("#", "");
+  if (normalized.length !== 6) return hex;
+  const num = parseInt(normalized, 16);
+  const r = Math.max(0, ((num >> 16) & 0xff) - amount);
+  const g = Math.max(0, ((num >> 8) & 0xff) - amount);
+  const b = Math.max(0, (num & 0xff) - amount);
+  return `#${[r, g, b]
+    .map((c) => c.toString(16).padStart(2, "0"))
+    .join("")}`;
+};
 
 const hourMarkers = computed((): HourMarker[] => {
   if (!timeRange.value) {
@@ -125,6 +162,13 @@ const eventBars = computed((): EventBar[] => {
         : `${startTime.toFormat("MMM d HH:mm")}–${endTime.toFormat(
             "MMM d HH:mm"
           )}`;
+    const colorIndex =
+      PASTEL_PALETTE.length === 0
+        ? 0
+        : hashString(`${title}-${eventy.dateRangeIso?.fromDateTimeIso ?? ""}`) %
+          PASTEL_PALETTE.length;
+    const color = PASTEL_PALETTE[colorIndex] ?? "#A5D8FF";
+    const borderColor = darkenHex(color, 24);
 
     bars.push({
       title,
@@ -132,6 +176,8 @@ const eventBars = computed((): EventBar[] => {
       width,
       lane: 0,
       rangeLabel,
+      color,
+      borderColor,
       startTime,
       endTime,
     });
@@ -195,6 +241,8 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
             width: `${bar.width}px`,
             top: `${LABEL_HEIGHT + bar.lane * (LANE_HEIGHT + LANE_GAP)}px`,
             height: `${LANE_HEIGHT}px`,
+            background: bar.color,
+            borderColor: bar.borderColor,
           }"
           :title="`${bar.title} (${bar.rangeLabel})`"
         >
@@ -280,8 +328,8 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 
 .event-bar {
   position: absolute;
-  background: linear-gradient(90deg, #60a5fa, #3b82f6);
-  border: 1px solid #2563eb;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 6px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
   padding: 2px 6px;
@@ -291,19 +339,21 @@ const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 }
 
 .dark .event-bar {
-  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
-  border-color: #0284c7;
   box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
 }
 
 .event-title {
   font-size: 11px;
   line-height: 1.3;
-  color: #eff6ff;
+  color: #0f172a;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
   display: block;
+}
+
+.dark .event-title {
+  color: #0f172a;
 }
 
 .events-spacer {
