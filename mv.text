@@ -4,32 +4,58 @@ skipHours: 12:00-13:00
 skipDates: [2026-01-21, 2026-01-22, 2026-01-23, 2026-01-24]
 targetLabel: Soll-Zeit
 actualLabel: Ist-Zeit
-eventsLabel: Aufgaben
 scale: 10
-laneHeight: 14
-laneGap: 6
-barRadius: 6
+laneHeight: 15
+laneGap: 14
+// 0 - 24
+barRadius: 1
+targetBarOpacity: 0.65
 dateLegendHeight: 30
-hourLegendHeight: 50
-targetBarOpacity: 0.5
-hoursUnitLabel: Stunden
+hourLegendHeight: 80
+// 0-1, default 0.12
+sectionOpacity: 0.3
+// 0-48, default 12
+sectionGap: 0
+sectionPadding: 30
+sectionTitleFontSize: 12
 
-2026-01-19 08:00 / 2026-01-19 15:00: 
+
+//TODO:
+//coloring system
+//handlin of sections inside sections
+
+section Vorbereitungen
+2026-01-19 08:00 / 2026-01-19 15:00:
 id: task1
-2026-01-19 08:00 / 2026-01-19 12:00: 
+2026-01-19 08:00 / 2026-01-19 12:00:
 for: task1
 
-2026-01-20 08:00 / 2026-01-20 10:00: 
+2026-01-20 08:00 / 2026-01-20 10:00:
 id: task1
-2026-01-20 08:00 / 2026-01-20 12:00: 
+2026-01-20 08:00 / 2026-01-20 12:00:
 for: task1
 
-2026-01-19 10:00 / 2026-01-19 12:00: 
-id: Aufgabe Hier
-2026-01-19 08:00 / 2026-01-19 12:00: 
-for: Aufgabe Hier
+2026-01-19 10:00 / 2026-01-19 12:00:
+id: task2
+2026-01-19 08:00 / 2026-01-19 12:00:
+for: task2
+endSection
 
-2026-01-19 15:00 / 2026-02-03 17:00: 
+section test
+2026-01-19 15:00 / 2026-02-03 17:00:
 id: task3
-2026-02-03 15:00 / 2026-02-03 17:00: 
+2026-02-03 15:00 / 2026-02-03 17:00:
 for: task3
+endSection
+
+section hello
+2026-01-19 15:00 / 2026-02-03 17:00:
+id: task4
+2026-01-19 15:00 / 2026-02-03 17:00:
+for: task4
+
+2026-01-19 15:00 / 2026-02-03 17:00:
+id: task5
+2026-01-19 15:00 / 2026-02-03 17:00:
+for: task5
+endSection
