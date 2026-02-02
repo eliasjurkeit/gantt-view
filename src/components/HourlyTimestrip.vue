@@ -599,14 +599,14 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
           </div>
         </div>
         <div
-          v-for="(marker, index) in hourMarkers"
-          :key="index"
-          class="hour-marker"
+        v-for="(marker, index) in hourMarkers"
+        :key="index"
+        class="hour-marker"
         :class="{ 'day-start': marker.isStartOfDay }"
         :style="{ width: `${marker.spanHours * hourWidth}px` }"
       >
-          <span class="hour-label">{{ marker.label }}</span>
-        </div>
+        <span class="hour-label">{{ marker.label }}</span>
+      </div>
         <div class="events-layer" :style="{ height: `${totalHeight}px` }">
         <div
           v-for="(bar, index) in eventBars"
@@ -787,12 +787,10 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 
 .hour-marker.day-start {
   border-left: 2px solid #94a3b8;
-  background-color: rgba(148, 163, 184, 0.1);
 }
 
 .dark .hour-marker.day-start {
   border-left-color: #a1a1aa;
-  background-color: rgba(161, 161, 170, 0.1);
 }
 
 .hour-label {
@@ -812,14 +810,6 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   color: #a1a1aa;
 }
 
-.day-start .hour-label {
-  font-weight: 600;
-  color: #475569;
-}
-
-.dark .day-start .hour-label {
-  color: #d4d4d8;
-}
 
 .events-layer {
   position: absolute;
