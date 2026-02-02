@@ -151,30 +151,48 @@ const parseTimePart = (value: string) => {
   return null;
 };
 
-const dailyHourRange = computed<DailyHourRange | null>(() => {
-  const header = headerOptions.value;
-  if (!header) return null;
-  const raw = header.hours;
+const parseTimePartWithColon = (value: string) => {
+  if (!value.includes(":")) return null;
+  return parseTimePart(value);
+};
 
+const parseHourRange = (
+  raw: unknown,
+  parsePart: (value: string) => number | null
+) => {
   if (typeof raw === "string") {
     const parts = raw.split(/-|–|—/).map((part) => part.trim());
     if (parts.length !== 2) return null;
-    const startMinutes = parseTimePart(parts[0]);
-    const endMinutes = parseTimePart(parts[1]);
+    const startMinutes = parsePart(parts[0]);
+    const endMinutes = parsePart(parts[1]);
     if (startMinutes === null || endMinutes === null) return null;
     if (endMinutes <= startMinutes) return null;
     return { startMinutes, endMinutes };
   }
 
   if (Array.isArray(raw) && raw.length === 2) {
-    const startMinutes = parseTimePart(String(raw[0]));
-    const endMinutes = parseTimePart(String(raw[1]));
+    const startMinutes = parsePart(String(raw[0]));
+    const endMinutes = parsePart(String(raw[1]));
     if (startMinutes === null || endMinutes === null) return null;
     if (endMinutes <= startMinutes) return null;
     return { startMinutes, endMinutes };
   }
 
   return null;
+};
+
+const dailyHourRange = computed<DailyHourRange | null>(() => {
+  const header = headerOptions.value;
+  if (!header) return null;
+  const raw = header.hours;
+  return parseHourRange(raw, parseTimePart);
+});
+
+const skipHourRange = computed<DailyHourRange | null>(() => {
+  const header = headerOptions.value;
+  if (!header) return null;
+  const raw = header.skipHours;
+  return parseHourRange(raw, parseTimePartWithColon);
 });
 
 const sidebarWidth = ref(220);
@@ -228,9 +246,29 @@ const darkenHex = (hex: string, amount: number) => {
     .join("")}`;
 };
 
+const getDailySegments = (day: DateTime) => {
+  const base = dailyHourRange.value ?? { startMinutes: 0, endMinutes: 24 * 60 };
+  const skip = skipHourRange.value;
+  if (!skip) return [base];
+
+  if (skip.endMinutes <= base.startMinutes || skip.startMinutes >= base.endMinutes) {
+    return [base];
+  }
+
+  const segments: DailyHourRange[] = [];
+  const firstEnd = Math.min(skip.startMinutes, base.endMinutes);
+  if (firstEnd > base.startMinutes) {
+    segments.push({ startMinutes: base.startMinutes, endMinutes: firstEnd });
+  }
+  const secondStart = Math.max(skip.endMinutes, base.startMinutes);
+  if (base.endMinutes > secondStart) {
+    segments.push({ startMinutes: secondStart, endMinutes: base.endMinutes });
+  }
+  return segments;
+};
+
 const visibleMinutesBetween = (start: DateTime, end: DateTime) => {
   if (+end <= +start) return 0;
-  const range = dailyHourRange.value;
   let minutes = 0;
   let day = start.startOf("day");
   const lastDay = end.startOf("day");
@@ -241,17 +279,15 @@ const visibleMinutesBetween = (start: DateTime, end: DateTime) => {
       continue;
     }
 
-    const dayStart = range
-      ? day.plus({ minutes: range.startMinutes })
-      : day.startOf("day");
-    const dayEnd = range
-      ? day.plus({ minutes: range.endMinutes })
-      : day.plus({ days: 1 });
-
-    const segmentStart = DateTime.max(start, dayStart);
-    const segmentEnd = DateTime.min(end, dayEnd);
-    if (+segmentEnd > +segmentStart) {
-      minutes += segmentEnd.diff(segmentStart, "minutes").minutes;
+    const segments = getDailySegments(day);
+    for (const segment of segments) {
+      const dayStart = day.plus({ minutes: segment.startMinutes });
+      const dayEnd = day.plus({ minutes: segment.endMinutes });
+      const segmentStart = DateTime.max(start, dayStart);
+      const segmentEnd = DateTime.min(end, dayEnd);
+      if (+segmentEnd > +segmentStart) {
+        minutes += segmentEnd.diff(segmentStart, "minutes").minutes;
+      }
     }
     day = day.plus({ days: 1 });
   }
@@ -265,20 +301,25 @@ const hourMarkers = computed((): HourMarker[] => {
 
   const markers: HourMarker[] = [];
   const { start, end } = timeRange.value;
-  const range = dailyHourRange.value;
   const startBound = start.startOf("hour");
   const endBound = end.endOf("hour");
 
-  if (range) {
-    let day = start.startOf("day");
-    const lastDay = end.startOf("day");
-    while (day <= lastDay) {
-      if (isSkippedDay(day)) {
-        day = day.plus({ days: 1 });
-        continue;
-      }
-      let minutes = range.startMinutes;
-      while (minutes < range.endMinutes) {
+  let day = start.startOf("day");
+  const lastDay = end.startOf("day");
+  while (day <= lastDay) {
+    if (isSkippedDay(day)) {
+      day = day.plus({ days: 1 });
+      continue;
+    }
+    const segments = getDailySegments(day);
+    if (segments.length === 0) {
+      day = day.plus({ days: 1 });
+      continue;
+    }
+    const firstSegmentStart = segments[0].startMinutes;
+    for (const segment of segments) {
+      let minutes = segment.startMinutes;
+      while (minutes < segment.endMinutes) {
         const markerTime = day.plus({ minutes });
         if (markerTime < startBound || markerTime > endBound) {
           minutes += 60 * MARKER_HOURS;
@@ -286,7 +327,7 @@ const hourMarkers = computed((): HourMarker[] => {
         }
         const nextMinutes = Math.min(
           minutes + 60 * MARKER_HOURS,
-          range.endMinutes
+          segment.endMinutes
         );
         const markerEnd = DateTime.min(
           day.plus({ minutes: nextMinutes }),
@@ -301,50 +342,19 @@ const hourMarkers = computed((): HourMarker[] => {
           hour: markerTime.hour,
           dateTime: markerTime,
           label:
-            minutes === range.startMinutes
+            minutes === firstSegmentStart
               ? markerTime.toFormat("MMM d")
               : markerTime.toFormat("HH:mm"),
-          isStartOfDay: minutes === range.startMinutes,
+          isStartOfDay: minutes === firstSegmentStart,
           spanHours,
         });
         minutes = nextMinutes;
         if (markers.length > 500) break;
       }
       if (markers.length > 500) break;
-      day = day.plus({ days: 1 });
     }
-    return markers;
-  }
-
-  // Floor to the start of the hour
-  let current = start.startOf("hour");
-  // Ceil to include the last hour
-  const endCeiled = end.endOf("hour");
-
-  while (current <= endCeiled) {
-    if (isSkippedDay(current)) {
-      current = current.plus({ days: 1 }).startOf("day");
-      continue;
-    }
-    const isStartOfDay = current.hour === 0;
-    const markerEnd = DateTime.min(
-      current.plus({ hours: MARKER_HOURS }),
-      endCeiled.plus({ minutes: 1 })
-    );
-    const spanHours = markerEnd.diff(current, "hours").hours;
-    markers.push({
-      hour: current.hour,
-      dateTime: current,
-      label: isStartOfDay
-        ? current.toFormat("MMM d")
-        : current.toFormat("HH:mm"),
-      isStartOfDay,
-      spanHours,
-    });
-    current = current.plus({ hours: MARKER_HOURS });
-
-    // Safety limit
     if (markers.length > 500) break;
+    day = day.plus({ days: 1 });
   }
 
   return markers;
