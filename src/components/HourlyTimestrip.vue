@@ -695,7 +695,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               :style="{
                 height: `${row.height}px`,
                 background: row.color,
-                borderColor: row.borderColor,
+                borderColor: row.color,
               }"
             >
               <span class="gantt-sidebar-text">{{ row.label }}</span>
@@ -753,7 +753,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               }px`,
               height: `${laneHeight}px`,
               background: bar.color,
-              borderColor: bar.borderColor,
+              borderColor: bar.color,
           }"
           :title="`${bar.title} (${bar.rangeLabel})`"
         >
