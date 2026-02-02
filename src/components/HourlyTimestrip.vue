@@ -581,6 +581,7 @@ const rowLayouts = computed(() => {
       sublaneCount: number;
       color: string;
       borderColor: string;
+      totals: number[];
     }
   >();
 
@@ -590,9 +591,17 @@ const rowLayouts = computed(() => {
       sublaneCount: 0,
       color: bar.color,
       borderColor: bar.borderColor,
+      totals: [],
     };
     entry.lane = bar.lane;
     entry.sublaneCount = Math.max(entry.sublaneCount, bar.sublane + 1);
+    while (entry.totals.length <= bar.sublane) {
+      entry.totals.push(0);
+    }
+    const duration = Number(bar.durationHours);
+    if (Number.isFinite(duration)) {
+      entry.totals[bar.sublane] += duration;
+    }
     rowsMap.set(bar.groupKey, entry);
   }
 
@@ -604,6 +613,11 @@ const rowLayouts = computed(() => {
       sublaneCount: value.sublaneCount,
       color: value.color,
       borderColor: value.borderColor,
+      totals: value.totals.map((total) =>
+        Math.round(total * 10) % 10 === 0
+          ? `${Math.round(total)}`
+          : total.toFixed(1)
+      ),
     }))
     .sort((a, b) => a.lane - b.lane);
 
@@ -729,6 +743,19 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               }"
             >
               <span class="gantt-sidebar-text">{{ row.label }}</span>
+              <div class="gantt-sidebar-totals">
+                <div
+                  v-for="(total, idx) in row.totals"
+                  :key="idx"
+                  class="gantt-sidebar-total"
+                  :style="{ height: `${laneHeight}px` }"
+                >
+                  <span class="gantt-sidebar-total-label">
+                    {{ idx === 0 ? "Target" : "Actual" }}
+                  </span>
+                  <span class="gantt-sidebar-total-value">{{ total }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -873,6 +900,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   border: 1px solid transparent;
   border-radius: 0;
   width: 100%;
+  justify-content: space-between;
 }
 
 .gantt-sidebar-text {
@@ -884,6 +912,37 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 }
 
 .gantt-root.dark .gantt-sidebar-text {
+  color: #0f172a;
+}
+
+.gantt-sidebar-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-left: 12px;
+  text-align: right;
+}
+
+.gantt-sidebar-total {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.gantt-sidebar-total-label {
+  font-size: 11px;
+  color: #1f2937;
+  text-transform: capitalize;
+}
+
+.gantt-root.dark .gantt-sidebar-total-label {
+  color: #0f172a;
+}
+
+.gantt-sidebar-total-value {
+  font-size: 12px;
+  font-weight: 700;
   color: #0f172a;
 }
 
