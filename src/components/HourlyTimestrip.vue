@@ -61,6 +61,8 @@ interface EventBar {
   color: string;
   borderColor: string;
   durationHours: string;
+  groupKey: string;
+  sublane: number;
 }
 
 interface DailyHourRange {
@@ -450,6 +452,12 @@ const eventBars = computed((): EventBar[] => {
       eventy.firstLine?.restTrimmed ||
       eventy.firstLine?.rest ||
       "Event";
+    const groupKeyRaw =
+      (eventy.properties?.id as string | undefined) ??
+      (eventy.properties?.for as string | undefined) ??
+      eventy.id ??
+      title;
+    const groupKey = String(groupKeyRaw);
     const rangeLabel =
       startTime.hasSame(endTime, "day")
         ? `${startTime.toFormat("HH:mm")}–${endTime.toFormat("HH:mm")}`
@@ -473,20 +481,127 @@ const eventBars = computed((): EventBar[] => {
       color,
       borderColor,
       durationHours,
+      groupKey,
+      sublane: 0,
       startTime,
       endTime,
     });
   }
 
   bars.sort((a, b) => +a.startTime - +b.startTime);
-  bars.forEach((bar, index) => {
-    bar.lane = index;
+  const groupInfo = new Map<
+    string,
+    {
+      bars: Array<
+        EventBar & { startTime: DateTime; endTime: DateTime }
+      >;
+      earliest: DateTime;
+      sublaneCount: number;
+    }
+  >();
+
+  for (const bar of bars) {
+    const entry = groupInfo.get(bar.groupKey) ?? {
+      bars: [],
+      earliest: bar.startTime,
+      sublaneCount: 0,
+    };
+    entry.bars.push(bar);
+    if (+bar.startTime < +entry.earliest) entry.earliest = bar.startTime;
+    groupInfo.set(bar.groupKey, entry);
+  }
+
+  const groupOrder = Array.from(groupInfo.entries()).sort(
+    (a, b) => +a[1].earliest - +b[1].earliest
+  );
+
+  groupOrder.forEach(([groupKey, info], groupIndex) => {
+    const sublaneEnds: DateTime[] = [];
+    const groupBars = info.bars.sort(
+      (a, b) => +a.startTime - +b.startTime
+    );
+    for (const bar of groupBars) {
+      let sublaneIndex = sublaneEnds.findIndex(
+        (endTime) => +bar.startTime >= +endTime
+      );
+      if (sublaneIndex === -1) {
+        sublaneIndex = sublaneEnds.length;
+        sublaneEnds.push(bar.endTime);
+      } else {
+        sublaneEnds[sublaneIndex] = bar.endTime;
+      }
+      bar.sublane = sublaneIndex;
+    }
+
+    info.sublaneCount = sublaneEnds.length;
+    for (const bar of groupBars) {
+      bar.lane = groupIndex;
+    }
+    groupInfo.set(groupKey, info);
   });
 
   return bars.map(({ startTime, endTime, ...rest }) => rest);
 });
 
-const laneCount = computed(() => Math.max(1, eventBars.value.length));
+const rowLayouts = computed(() => {
+  const rowsMap = new Map<
+    string,
+    {
+      lane: number;
+      sublaneCount: number;
+      color: string;
+      borderColor: string;
+    }
+  >();
+
+  for (const bar of eventBars.value) {
+    const entry = rowsMap.get(bar.groupKey) ?? {
+      lane: bar.lane,
+      sublaneCount: 0,
+      color: bar.color,
+      borderColor: bar.borderColor,
+    };
+    entry.lane = bar.lane;
+    entry.sublaneCount = Math.max(entry.sublaneCount, bar.sublane + 1);
+    rowsMap.set(bar.groupKey, entry);
+  }
+
+  const rows = Array.from(rowsMap.entries())
+    .map(([key, value]) => ({
+      key,
+      label: key,
+      lane: value.lane,
+      sublaneCount: value.sublaneCount,
+      color: value.color,
+      borderColor: value.borderColor,
+    }))
+    .sort((a, b) => a.lane - b.lane);
+
+  let offset = 0;
+  const layout = rows.map((row) => {
+    const height =
+      row.sublaneCount * (laneHeight.value + LANE_GAP) - LANE_GAP;
+    const top = offset;
+    offset += height + LANE_GAP;
+    return { ...row, top, height };
+  });
+
+  const contentHeight = layout.length
+    ? offset - LANE_GAP
+    : 0;
+
+  return { rows: layout, contentHeight };
+});
+
+const sidebarRows = computed(() => rowLayouts.value.rows);
+
+const rowTopByKey = computed(() => {
+  const map = new Map<string, number>();
+  rowLayouts.value.rows.forEach((row) => {
+    map.set(row.key, row.top);
+  });
+  return map;
+});
 
 const dateLegendHeight = computed(() => {
   const header = headerOptions.value;
@@ -518,7 +633,7 @@ const totalHeight = computed(
   () =>
     legendStackHeight.value +
     BAR_OFFSET +
-    laneCount.value * (laneHeight.value + LANE_GAP) +
+    rowLayouts.value.contentHeight +
     12
 );
 
@@ -567,24 +682,25 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
             Events
           </div>
           <div
-            v-for="(bar, index) in eventBars"
-            :key="index"
+            v-for="(row, index) in sidebarRows"
+            :key="row.key"
             class="gantt-sidebar-row"
             :style="{
-              height: `${laneHeight + LANE_GAP}px`,
+              height: `${row.height}px`,
+              marginBottom:
+                index === sidebarRows.length - 1 ? '0px' : `${LANE_GAP}px`,
             }"
-            :title="bar.title"
+            :title="row.label"
           >
             <div
               class="gantt-sidebar-rect"
               :style="{
-                height: `${laneHeight}px`,
-                background: bar.color,
-                borderColor: bar.borderColor,
-                marginBottom: `${LANE_GAP}px`,
+                height: `${row.height}px`,
+                background: row.color,
+                borderColor: row.borderColor,
               }"
             >
-              <span class="gantt-sidebar-text">{{ bar.title }}</span>
+              <span class="gantt-sidebar-text">{{ row.label }}</span>
             </div>
           </div>
         </div>
@@ -634,7 +750,8 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               top: `${
                 legendStackHeight +
                 BAR_OFFSET +
-                bar.lane * (laneHeight + LANE_GAP)
+                (rowTopByKey.get(bar.groupKey) ?? 0) +
+                bar.sublane * (laneHeight + LANE_GAP)
               }px`,
               height: `${laneHeight}px`,
               background: bar.color,
