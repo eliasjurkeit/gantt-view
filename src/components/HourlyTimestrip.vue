@@ -609,7 +609,6 @@ const eventBars = computed((): EventBar[] => {
 
   const { start } = timeRange.value;
   const eventSection = sectionsInfo.value.eventSection;
-  const sectionColors = sectionsInfo.value.sectionColors;
   const bars: Array<
     EventBar & { startTime: DateTime; endTime: DateTime }
   > = [];
@@ -743,7 +742,7 @@ const eventBars = computed((): EventBar[] => {
     info.sublaneCount = idSublaneCount + nonIdSublaneEnds.length;
     for (const bar of groupBars) {
       bar.lane = groupIndex;
-      const key = bar.sectionName ?? "__orphan__";
+      const key = bar.sectionName ?? `__orphan_lane_${groupIndex}`;
       const set = lanesBySection.get(key) ?? new Set<number>();
       set.add(groupIndex);
       lanesBySection.set(key, set);
@@ -756,20 +755,18 @@ const eventBars = computed((): EventBar[] => {
     { color: string; borderColor: string }
   >();
 
-  lanesBySection.forEach((lanesSet, sectionKey) => {
-    const lanes = Array.from(lanesSet).sort((a, b) => a - b);
+  const sectionKeys = Array.from(lanesBySection.keys()).sort();
+  sectionKeys.forEach((sectionKey, sectionIdx) => {
+    const lanes = Array.from(lanesBySection.get(sectionKey) ?? []).sort(
+      (a, b) => a - b
+    );
     const base =
-      sectionKey !== "__orphan__"
-        ? sectionColors.get(sectionKey)?.base ??
-          PASTEL_PALETTE[Math.abs(hashString(sectionKey)) % PASTEL_PALETTE.length] ??
-          "#A5D8FF"
-        : PASTEL_PALETTE[Math.abs(hashString(sectionKey)) % PASTEL_PALETTE.length] ??
-          "#A5D8FF";
+      PASTEL_PALETTE[sectionIdx % PASTEL_PALETTE.length] ?? "#A5D8FF";
 
     lanes.forEach((laneIdx, idx) => {
-      const factor = Math.min(0.6, 0.25 + idx * 0.15);
+      const factor = Math.min(0.8, 0.35 + idx * 0.22);
       const color = mixHex(base, "#ffffff", factor);
-      const borderColor = darkenHex(base, Math.round(28 + idx * 6));
+      const borderColor = darkenHex(base, Math.round(32 + idx * 10));
       laneColors.set(laneIdx, { color, borderColor });
     });
   });
@@ -785,7 +782,7 @@ const eventBars = computed((): EventBar[] => {
         borderColor: darkenHex(
           PASTEL_PALETTE[Math.abs(hashString(rest.groupKey)) % PASTEL_PALETTE.length] ??
             "#A5D8FF",
-          24
+          32
         ),
       };
     return {
