@@ -131,6 +131,15 @@ const laneGap = computed(() => {
   return Math.min(32, Math.max(0, value));
 });
 
+const barRadius = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return 6;
+  const raw = header.barRadius;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 6;
+  return Math.min(24, Math.max(0, value));
+});
+
 const targetBarOpacity = computed(() => {
   const header = headerOptions.value;
   if (!header) return 0.4;
@@ -932,6 +941,7 @@ onBeforeUnmount(() => {
               background: bar.color,
               borderColor: bar.color,
               opacity: bar.isIdEvent ? targetBarOpacity : 1,
+              borderRadius: `${barRadius}px`,
               outline: bar.isIdEvent
                 ? `1px solid ${bar.borderColor}`
                 : 'none',
@@ -1227,7 +1237,6 @@ onBeforeUnmount(() => {
   position: absolute;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
   padding: 2px 6px;
   box-sizing: border-box;
