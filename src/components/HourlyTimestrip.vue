@@ -820,10 +820,14 @@ const rowLayouts = computed(() => {
     return { ...row, top, height, nextGap: gapToNext };
   });
 
-  const lastGap = layout.length ? layout[layout.length - 1].nextGap : 0;
-  const contentHeight = layout.length ? offset - lastGap : 0;
+  const tailGap =
+    rows.length && rows[rows.length - 1].sectionName
+      ? sectionPadding.value + sectionGap.value
+      : 0;
 
-  return { rows: layout, contentHeight, totals: rows };
+  const contentHeight = offset + tailGap;
+
+  return { rows: layout, contentHeight, totals: rows, tailGap };
 });
 
 const sidebarRows = computed(() => rowLayouts.value.rows);
@@ -898,6 +902,8 @@ const sectionBands = computed<SectionBand[]>(() => {
     })
     .sort((a, b) => a.top - b.top);
 });
+
+const totalRowTopOffset = computed(() => rowLayouts.value.tailGap ?? 0);
 
 const sidebarSectionBands = computed<SectionBand[]>(() => {
   const bands = new Map<
@@ -1099,8 +1105,13 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
-          <div class="gantt-sidebar-total-row">
-            <span class="gantt-sidebar-total-label">{{ totalLabel }}</span>
+          <div
+            class="gantt-sidebar-total-row"
+            :style="{ marginTop: `${totalRowTopOffset}px` }"
+          >
+            <span class="gantt-sidebar-total-label">
+              {{ totalLabel }}
+            </span>
             <div class="gantt-sidebar-totals">
               <div
                 v-for="(total, idx) in sidebarTotals"
