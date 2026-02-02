@@ -1358,6 +1358,7 @@ onBeforeUnmount(() => {
   height: 100%;
   position: relative;
   overflow: visible;
+  z-index: 2;
 }
 
 .dark .hour-marker {
@@ -1397,6 +1398,7 @@ onBeforeUnmount(() => {
   top: 0;
   width: 100%;
   pointer-events: none;
+  z-index: 3;
 }
 
 .event-bar {
