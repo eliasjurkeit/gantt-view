@@ -32,6 +32,7 @@ interface HourMarker {
   dateTime: DateTime;
   label: string;
   isStartOfDay: boolean;
+  spanHours: number;
 }
 
 interface EventBar {
@@ -273,6 +274,19 @@ const hourMarkers = computed((): HourMarker[] => {
           minutes += 60 * MARKER_HOURS;
           continue;
         }
+        const nextMinutes = Math.min(
+          minutes + 60 * MARKER_HOURS,
+          range.endMinutes
+        );
+        const markerEnd = DateTime.min(
+          day.plus({ minutes: nextMinutes }),
+          endBound
+        );
+        const spanHours = markerEnd.diff(markerTime, "hours").hours;
+        if (spanHours <= 0) {
+          minutes = nextMinutes;
+          continue;
+        }
         markers.push({
           hour: markerTime.hour,
           dateTime: markerTime,
@@ -281,8 +295,9 @@ const hourMarkers = computed((): HourMarker[] => {
               ? markerTime.toFormat("MMM d")
               : markerTime.toFormat("HH:mm"),
           isStartOfDay: minutes === range.startMinutes,
+          spanHours,
         });
-        minutes += 60 * MARKER_HOURS;
+        minutes = nextMinutes;
         if (markers.length > 500) break;
       }
       if (markers.length > 500) break;
@@ -302,6 +317,11 @@ const hourMarkers = computed((): HourMarker[] => {
       continue;
     }
     const isStartOfDay = current.hour === 0;
+    const markerEnd = DateTime.min(
+      current.plus({ hours: MARKER_HOURS }),
+      endCeiled.plus({ minutes: 1 })
+    );
+    const spanHours = markerEnd.diff(current, "hours").hours;
     markers.push({
       hour: current.hour,
       dateTime: current,
@@ -309,6 +329,7 @@ const hourMarkers = computed((): HourMarker[] => {
         ? current.toFormat("MMM d")
         : current.toFormat("HH:mm"),
       isStartOfDay,
+      spanHours,
     });
     current = current.plus({ hours: MARKER_HOURS });
 
@@ -319,8 +340,12 @@ const hourMarkers = computed((): HourMarker[] => {
   return markers;
 });
 
-const markerWidth = computed(() => HOUR_WIDTH * MARKER_HOURS);
-const totalWidth = computed(() => hourMarkers.value.length * markerWidth.value);
+const totalWidth = computed(() =>
+  hourMarkers.value.reduce(
+    (sum, marker) => sum + marker.spanHours * HOUR_WIDTH,
+    0
+  )
+);
 
 const eventBars = computed((): EventBar[] => {
   const transformed = markwhenStore.markwhen?.transformed;
@@ -461,11 +486,11 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
         :style="{ width: `${totalWidth}px` }"
       >
         <div
-          v-for="(marker, index) in hourMarkers"
-          :key="index"
+        v-for="(marker, index) in hourMarkers"
+        :key="index"
         class="hour-marker"
         :class="{ 'day-start': marker.isStartOfDay }"
-        :style="{ width: `${markerWidth}px` }"
+        :style="{ width: `${marker.spanHours * HOUR_WIDTH}px` }"
       >
           <span class="hour-label">{{ marker.label }}</span>
         </div>
