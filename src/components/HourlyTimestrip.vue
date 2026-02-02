@@ -528,24 +528,42 @@ const eventBars = computed((): EventBar[] => {
   );
 
   groupOrder.forEach(([groupKey, info], groupIndex) => {
-    const sublaneEnds: DateTime[] = [];
     const groupBars = info.bars.sort(
       (a, b) => +a.startTime - +b.startTime
     );
-    for (const bar of groupBars) {
-      let sublaneIndex = sublaneEnds.findIndex(
-        (endTime) => +bar.startTime >= +endTime
-      );
-      if (sublaneIndex === -1) {
-        sublaneIndex = sublaneEnds.length;
-        sublaneEnds.push(bar.endTime);
-      } else {
-        sublaneEnds[sublaneIndex] = bar.endTime;
-      }
-      bar.sublane = sublaneIndex;
-    }
+    const idBars = groupBars.filter((bar) => bar.isIdEvent);
+    const nonIdBars = groupBars.filter((bar) => !bar.isIdEvent);
 
-    info.sublaneCount = sublaneEnds.length;
+    const assignSublanes = (
+      barsToAssign: Array<EventBar & { startTime: DateTime; endTime: DateTime }>,
+      sublaneEnds: DateTime[]
+    ) => {
+      for (const bar of barsToAssign) {
+        let sublaneIndex = sublaneEnds.findIndex(
+          (endTime) => +bar.startTime >= +endTime
+        );
+        if (sublaneIndex === -1) {
+          sublaneIndex = sublaneEnds.length;
+          sublaneEnds.push(bar.endTime);
+        } else {
+          sublaneEnds[sublaneIndex] = bar.endTime;
+        }
+        bar.sublane = sublaneIndex;
+      }
+    };
+
+    const idSublaneEnds: DateTime[] = [];
+    assignSublanes(idBars, idSublaneEnds);
+
+    const nonIdSublaneEnds: DateTime[] = [];
+    assignSublanes(nonIdBars, nonIdSublaneEnds);
+
+    const idSublaneCount = idSublaneEnds.length;
+    nonIdBars.forEach((bar) => {
+      bar.sublane += idSublaneCount;
+    });
+
+    info.sublaneCount = idSublaneCount + nonIdSublaneEnds.length;
     for (const bar of groupBars) {
       bar.lane = groupIndex;
     }
