@@ -7,6 +7,7 @@ import { useMarkwhenStore } from "../Markwhen/markwhenStore";
 const markwhenStore = useMarkwhenStore();
 
 const HOUR_WIDTH = 60; // pixels per hour
+const MARKER_HOURS = 2;
 const LABEL_HEIGHT = 24;
 const LANE_HEIGHT = 20;
 const LANE_GAP = 6;
@@ -269,7 +270,7 @@ const hourMarkers = computed((): HourMarker[] => {
       while (minutes < range.endMinutes) {
         const markerTime = day.plus({ minutes });
         if (markerTime < startBound || markerTime > endBound) {
-          minutes += 60;
+          minutes += 60 * MARKER_HOURS;
           continue;
         }
         markers.push({
@@ -281,7 +282,7 @@ const hourMarkers = computed((): HourMarker[] => {
               : markerTime.toFormat("HH:mm"),
           isStartOfDay: minutes === range.startMinutes,
         });
-        minutes += 60;
+        minutes += 60 * MARKER_HOURS;
         if (markers.length > 500) break;
       }
       if (markers.length > 500) break;
@@ -309,7 +310,7 @@ const hourMarkers = computed((): HourMarker[] => {
         : current.toFormat("HH:mm"),
       isStartOfDay,
     });
-    current = current.plus({ hours: 1 });
+    current = current.plus({ hours: MARKER_HOURS });
 
     // Safety limit
     if (markers.length > 500) break;
@@ -318,7 +319,8 @@ const hourMarkers = computed((): HourMarker[] => {
   return markers;
 });
 
-const totalWidth = computed(() => hourMarkers.value.length * HOUR_WIDTH);
+const markerWidth = computed(() => HOUR_WIDTH * MARKER_HOURS);
+const totalWidth = computed(() => hourMarkers.value.length * markerWidth.value);
 
 const eventBars = computed((): EventBar[] => {
   const transformed = markwhenStore.markwhen?.transformed;
@@ -461,10 +463,10 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
         <div
           v-for="(marker, index) in hourMarkers"
           :key="index"
-          class="hour-marker"
-          :class="{ 'day-start': marker.isStartOfDay }"
-          :style="{ width: `${HOUR_WIDTH}px` }"
-        >
+        class="hour-marker"
+        :class="{ 'day-start': marker.isStartOfDay }"
+        :style="{ width: `${markerWidth}px` }"
+      >
           <span class="hour-label">{{ marker.label }}</span>
         </div>
         <div class="events-layer" :style="{ height: `${totalHeight}px` }">
