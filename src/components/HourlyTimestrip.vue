@@ -387,7 +387,7 @@ const dayLabels = computed((): DayLabel[] => {
           width: offset - currentStart,
         });
       }
-      currentLabel = marker.dateTime.toFormat("MMM d");
+      currentLabel = marker.dateTime.toFormat("MM.dd.yyyy");
       currentStart = offset;
     }
     offset += marker.spanHours * hourWidth.value;
