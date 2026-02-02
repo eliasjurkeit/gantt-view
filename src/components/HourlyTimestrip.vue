@@ -788,6 +788,9 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
               outline: bar.isIdEvent
                 ? `1px solid ${bar.borderColor}`
                 : 'none',
+              backgroundImage: bar.isIdEvent
+                ? `repeating-linear-gradient(45deg, ${bar.borderColor} 0 1px, transparent 1px 6px)`
+                : 'none',
           }"
           :title="`${bar.title} (${bar.rangeLabel})`"
         >
