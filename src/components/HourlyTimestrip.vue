@@ -45,6 +45,12 @@ interface HourMarker {
   spanHours: number;
 }
 
+interface DayLabel {
+  label: string;
+  left: number;
+  width: number;
+}
+
 interface EventBar {
   title: string;
   left: number;
@@ -341,10 +347,7 @@ const hourMarkers = computed((): HourMarker[] => {
         markers.push({
           hour: markerTime.hour,
           dateTime: markerTime,
-          label:
-            minutes === firstSegmentStart
-              ? markerTime.toFormat("MMM d")
-              : markerTime.toFormat("HH:mm"),
+          label: markerTime.toFormat("HH:mm"),
           isStartOfDay: minutes === firstSegmentStart,
           spanHours,
         });
@@ -366,6 +369,40 @@ const totalWidth = computed(() =>
     0
   )
 );
+
+const dayLabels = computed((): DayLabel[] => {
+  const labels: DayLabel[] = [];
+  if (hourMarkers.value.length === 0) return labels;
+
+  let currentLabel: string | null = null;
+  let currentStart = 0;
+  let offset = 0;
+
+  for (const marker of hourMarkers.value) {
+    if (marker.isStartOfDay) {
+      if (currentLabel !== null) {
+        labels.push({
+          label: currentLabel,
+          left: currentStart,
+          width: offset - currentStart,
+        });
+      }
+      currentLabel = marker.dateTime.toFormat("MMM d");
+      currentStart = offset;
+    }
+    offset += marker.spanHours * hourWidth.value;
+  }
+
+  if (currentLabel !== null) {
+    labels.push({
+      label: currentLabel,
+      left: currentStart,
+      width: offset - currentStart,
+    });
+  }
+
+  return labels;
+});
 
 const eventBars = computed((): EventBar[] => {
   const transformed = markwhenStore.markwhen?.transformed;
@@ -515,10 +552,20 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
         class="timestrip"
         :style="{ width: `${totalWidth}px` }"
       >
+        <div class="day-labels" :style="{ width: `${totalWidth}px` }">
+          <div
+            v-for="(label, index) in dayLabels"
+            :key="index"
+            class="day-label"
+            :style="{ left: `${label.left}px`, width: `${label.width}px` }"
+          >
+            {{ label.label }}
+          </div>
+        </div>
         <div
-        v-for="(marker, index) in hourMarkers"
-        :key="index"
-        class="hour-marker"
+          v-for="(marker, index) in hourMarkers"
+          :key="index"
+          class="hour-marker"
         :class="{ 'day-start': marker.isStartOfDay }"
         :style="{ width: `${marker.spanHours * hourWidth}px` }"
       >
@@ -660,6 +707,29 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   flex-direction: row;
   position: relative;
   height: 100%;
+}
+
+.day-labels {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  height: 16px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.day-label {
+  position: absolute;
+  top: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.gantt-root.dark .day-label {
+  color: #e2e8f0;
 }
 
 .hour-marker {
