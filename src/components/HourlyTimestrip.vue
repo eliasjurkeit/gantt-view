@@ -163,9 +163,9 @@ const eventsLabel = computed(() => {
     : "Events";
 });
 
-const smallprint = computed(() => {
+const hoursUnitLabel = computed(() => {
   const header = headerOptions.value;
-  const raw = header?.smallprint;
+  const raw = header?.hoursUnitLabel;
   return typeof raw === "string" && raw.trim().length > 0
     ? raw.trim()
     : "";
@@ -778,8 +778,8 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
         >
           <div class="gantt-sidebar-header" :style="{ height: `${LABEL_HEIGHT}px` }">
             <span>{{ eventsLabel }}</span>
-            <span v-if="smallprint" class="gantt-sidebar-smallprint">
-              {{ smallprint }}
+            <span v-if="hoursUnitLabel" class="gantt-sidebar-smallprint">
+              {{ hoursUnitLabel }}
             </span>
           </div>
           <div

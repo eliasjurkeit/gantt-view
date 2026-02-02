@@ -10,7 +10,7 @@ laneHeight: 14
 dateLegendHeight: 30
 hourLegendHeight: 50
 targetBarOpacity: 0.5
-smallprint: Stunden
+hoursUnitLabel: Stunden
 
 2026-01-19 08:00 / 2026-01-19 15:00: 
 id: task1
