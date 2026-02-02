@@ -967,13 +967,13 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   flex-direction: column;
   gap: 0;
   margin-left: 12px;
-  text-align: right;
+  text-align: left;
 }
 
 .gantt-sidebar-total {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
 }
 
@@ -991,6 +991,9 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
   font-size: 12px;
   font-weight: 700;
   color: #0f172a;
+  margin-left: auto;
+  text-align: right;
+  min-width: 2ch;
 }
 
 .gantt-root.dark .gantt-sidebar-total-value {
