@@ -131,6 +131,22 @@ const idOpacity = computed(() => {
   return Math.min(1, Math.max(0, value));
 });
 
+const targetLabel = computed(() => {
+  const header = headerOptions.value;
+  const raw = header?.targetLabel;
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : "Target";
+});
+
+const actualLabel = computed(() => {
+  const header = headerOptions.value;
+  const raw = header?.actualLabel;
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : "Actual";
+});
+
 const skippedDays = computed(() => {
   const header = headerOptions.value;
   if (!header) return new Set<string>();
@@ -767,7 +783,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
                   :style="{ height: `${laneHeight}px` }"
                 >
                   <span class="gantt-sidebar-total-label">
-                    {{ idx === 0 ? "Target" : "Actual" }}
+                    {{ idx === 0 ? targetLabel : actualLabel }}
                   </span>
                   <span class="gantt-sidebar-total-value">{{ total }}</span>
                 </div>
@@ -783,7 +799,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
                 class="gantt-sidebar-total"
               >
                 <span class="gantt-sidebar-total-label">
-                  {{ idx === 0 ? "Target" : "Actual" }}
+                  {{ idx === 0 ? targetLabel : actualLabel }}
                 </span>
                 <span class="gantt-sidebar-total-value">{{ total }}</span>
               </div>
