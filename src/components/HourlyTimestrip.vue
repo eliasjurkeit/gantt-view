@@ -185,7 +185,7 @@ const dailyHourRange = computed<DailyHourRange | null>(() => {
   const header = headerOptions.value;
   if (!header) return null;
   const raw = header.hours;
-  return parseHourRange(raw, parseTimePart);
+  return parseHourRange(raw, parseTimePartWithColon);
 });
 
 const skipHourRange = computed<DailyHourRange | null>(() => {
