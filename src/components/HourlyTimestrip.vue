@@ -168,26 +168,24 @@ const sectionOpacity = computed(() => {
   return Math.min(1, Math.max(0, value));
 });
 
+// Padding inside a section between its outer lanes and the section border.
 const sectionPadding = computed(() => {
   const header = headerOptions.value;
-  if (!header) return 4;
+  if (!header) return 8;
   const raw = header.sectionPadding;
   const value = Number(raw);
-  if (!Number.isFinite(value)) return 4;
-  return Math.min(32, Math.max(0, value));
+  if (!Number.isFinite(value)) return 8;
+  return Math.min(64, Math.max(0, value));
 });
 
-const effectiveSectionPadding = computed(() =>
-  Math.max(sectionPadding.value, laneHeight.value)
-);
-
+// Extra gap applied only between different sections (measured from the section border).
 const sectionGap = computed(() => {
   const header = headerOptions.value;
   if (!header) return DEFAULT_SECTION_GAP;
   const raw = header.sectionGap;
   const value = Number(raw);
   if (!Number.isFinite(value)) return DEFAULT_SECTION_GAP;
-  return Math.min(48, Math.max(0, value));
+  return Math.min(96, Math.max(0, value));
 });
 
 const targetLabel = computed(() => {
@@ -815,7 +813,9 @@ const rowLayouts = computed(() => {
       index === rows.length - 1
         ? 0
         : laneGap.value +
-          (row.sectionName === rows[index + 1].sectionName ? 0 : sectionGap.value);
+          (row.sectionName === rows[index + 1].sectionName
+            ? 0
+            : sectionGap.value + sectionPadding.value * 2);
     offset += height + gapToNext;
     return { ...row, top, height, nextGap: gapToNext };
   });
@@ -855,68 +855,94 @@ const rowTopByKey = computed(() => {
 const sectionBands = computed<SectionBand[]>(() => {
   const bands = new Map<
     string,
-    { title: string; top: number; bottom: number; fill: string; border: string }
+    { title: string; minTop: number; maxBottom: number; fill: string; border: string }
   >();
-  const offset = legendStackHeight.value + BAR_OFFSET;
+  const rowAreaOffset = legendStackHeight.value + BAR_OFFSET;
+  const rowAreaBottom = rowAreaOffset + rowLayouts.value.contentHeight;
 
   rowLayouts.value.rows.forEach((row) => {
     if (!row.sectionName) return;
     const colors = sectionsInfo.value.sectionColors.get(row.sectionName);
     const fill = colors?.fill ?? "rgba(148, 163, 184, 0.12)";
     const border = colors?.border ?? "rgba(148, 163, 184, 0.4)";
-    const top = offset + row.top;
+    const top = rowAreaOffset + row.top;
     const bottom = top + row.height;
     const existing = bands.get(row.sectionName);
     if (!existing) {
-      bands.set(row.sectionName, { title: row.sectionName, top, bottom, fill, border });
+      bands.set(row.sectionName, {
+        title: row.sectionName,
+        minTop: top,
+        maxBottom: bottom,
+        fill,
+        border,
+      });
     } else {
-      existing.top = Math.min(existing.top, top);
-      existing.bottom = Math.max(existing.bottom, bottom);
+      existing.minTop = Math.min(existing.minTop, top);
+      existing.maxBottom = Math.max(existing.maxBottom, bottom);
     }
   });
 
   return Array.from(bands.values())
-    .map((band) => ({
-      title: band.title,
-      top: band.top,
-      height: band.bottom - band.top,
-      fill: band.fill,
-      border: band.border,
-    }))
+    .map((band) => {
+      const paddedTop = band.minTop - sectionPadding.value;
+      const paddedBottom = band.maxBottom + sectionPadding.value;
+      const top = Math.max(0, paddedTop);
+      const bottom = Math.min(rowAreaBottom, paddedBottom);
+      return {
+        title: band.title,
+        top,
+        height: Math.max(0, bottom - top),
+        fill: band.fill,
+        border: band.border,
+      };
+    })
     .sort((a, b) => a.top - b.top);
 });
 
 const sidebarSectionBands = computed<SectionBand[]>(() => {
   const bands = new Map<
     string,
-    { title: string; top: number; bottom: number; fill: string; border: string }
+    { title: string; minTop: number; maxBottom: number; fill: string; border: string }
   >();
-  const offset = sidebarRowsOffset.value + LABEL_HEIGHT;
+  const rowAreaOffset = sidebarRowsOffset.value + LABEL_HEIGHT;
+  const rowAreaBottom = rowAreaOffset + rowLayouts.value.contentHeight;
 
   rowLayouts.value.rows.forEach((row) => {
     if (!row.sectionName) return;
     const colors = sectionsInfo.value.sectionColors.get(row.sectionName);
     const fill = colors?.fill ?? "rgba(148, 163, 184, 0.12)";
     const border = colors?.border ?? "rgba(148, 163, 184, 0.4)";
-    const top = offset + row.top;
+    const top = rowAreaOffset + row.top;
     const bottom = top + row.height;
     const existing = bands.get(row.sectionName);
     if (!existing) {
-      bands.set(row.sectionName, { title: row.sectionName, top, bottom, fill, border });
+      bands.set(row.sectionName, {
+        title: row.sectionName,
+        minTop: top,
+        maxBottom: bottom,
+        fill,
+        border,
+      });
     } else {
-      existing.top = Math.min(existing.top, top);
-      existing.bottom = Math.max(existing.bottom, bottom);
+      existing.minTop = Math.min(existing.minTop, top);
+      existing.maxBottom = Math.max(existing.maxBottom, bottom);
     }
   });
 
   return Array.from(bands.values())
-    .map((band) => ({
-      title: band.title,
-      top: band.top,
-      height: band.bottom - band.top,
-      fill: band.fill,
-      border: band.border,
-    }))
+    .map((band) => {
+      const paddedTop = band.minTop - sectionPadding.value;
+      const paddedBottom = band.maxBottom + sectionPadding.value;
+      const top = Math.max(0, paddedTop);
+      const bottom = Math.min(rowAreaBottom, paddedBottom);
+      return {
+        title: band.title,
+        top,
+        height: Math.max(0, bottom - top),
+        fill: band.fill,
+        border: band.border,
+      };
+    })
     .sort((a, b) => a.top - b.top);
 });
 
