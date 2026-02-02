@@ -378,6 +378,17 @@ const hexToRgb = (hex: string) => {
   return { r, g, b };
 };
 
+const mixHex = (hex: string, mixWith: string, amount: number) => {
+  const a = hexToRgb(hex);
+  const b = hexToRgb(mixWith);
+  if (!a || !b) return hex;
+  const mix = (v1: number, v2: number) =>
+    Math.max(0, Math.min(255, Math.round(v1 * (1 - amount) + v2 * amount)));
+  return `#${[mix(a.r, b.r), mix(a.g, b.g), mix(a.b, b.b)]
+    .map((v) => v.toString(16).padStart(2, "0"))
+    .join("")}`;
+};
+
 const getDailySegments = (day: DateTime) => {
   const base = dailyHourRange.value ?? { startMinutes: 0, endMinutes: 24 * 60 };
   const skip = skipHourRange.value;
@@ -598,6 +609,7 @@ const eventBars = computed((): EventBar[] => {
 
   const { start } = timeRange.value;
   const eventSection = sectionsInfo.value.eventSection;
+  const sectionColors = sectionsInfo.value.sectionColors;
   const bars: Array<
     EventBar & { startTime: DateTime; endTime: DateTime }
   > = [];
@@ -690,6 +702,8 @@ const eventBars = computed((): EventBar[] => {
     (a, b) => +a[1].earliest - +b[1].earliest
   );
 
+  const lanesBySection = new Map<string, Set<number>>();
+
   groupOrder.forEach(([groupKey, info], groupIndex) => {
     const groupBars = info.bars.sort(
       (a, b) => +a.startTime - +b.startTime
@@ -729,11 +743,58 @@ const eventBars = computed((): EventBar[] => {
     info.sublaneCount = idSublaneCount + nonIdSublaneEnds.length;
     for (const bar of groupBars) {
       bar.lane = groupIndex;
+      const key = bar.sectionName ?? "__orphan__";
+      const set = lanesBySection.get(key) ?? new Set<number>();
+      set.add(groupIndex);
+      lanesBySection.set(key, set);
     }
     groupInfo.set(groupKey, info);
   });
 
-  return bars.map(({ startTime, endTime, ...rest }) => rest);
+  const laneColors = new Map<
+    number,
+    { color: string; borderColor: string }
+  >();
+
+  lanesBySection.forEach((lanesSet, sectionKey) => {
+    const lanes = Array.from(lanesSet).sort((a, b) => a - b);
+    const base =
+      sectionKey !== "__orphan__"
+        ? sectionColors.get(sectionKey)?.base ??
+          PASTEL_PALETTE[Math.abs(hashString(sectionKey)) % PASTEL_PALETTE.length] ??
+          "#A5D8FF"
+        : PASTEL_PALETTE[Math.abs(hashString(sectionKey)) % PASTEL_PALETTE.length] ??
+          "#A5D8FF";
+
+    lanes.forEach((laneIdx, idx) => {
+      const tint = Math.min(0.3, idx * 0.07);
+      const color = mixHex(base, "#ffffff", tint);
+      const borderColor = darkenHex(base, 28);
+      laneColors.set(laneIdx, { color, borderColor });
+    });
+  });
+
+  return bars.map(({ startTime, endTime, lane, ...rest }) => {
+    const laneColor =
+      laneColors.get(lane) ??
+      laneColors.values().next().value ??
+      {
+        color:
+          PASTEL_PALETTE[Math.abs(hashString(rest.groupKey)) % PASTEL_PALETTE.length] ??
+          "#A5D8FF",
+        borderColor: darkenHex(
+          PASTEL_PALETTE[Math.abs(hashString(rest.groupKey)) % PASTEL_PALETTE.length] ??
+            "#A5D8FF",
+          24
+        ),
+      };
+    return {
+      ...rest,
+      lane,
+      color: laneColor.color,
+      borderColor: laneColor.borderColor,
+    };
+  });
 });
 
 const rowLayouts = computed(() => {
