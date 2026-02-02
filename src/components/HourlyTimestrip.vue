@@ -468,8 +468,7 @@ const eventBars = computed((): EventBar[] => {
     const colorIndex =
       PASTEL_PALETTE.length === 0
         ? 0
-        : hashString(`${title}-${eventy.dateRangeIso?.fromDateTimeIso ?? ""}`) %
-          PASTEL_PALETTE.length;
+        : hashString(groupKey) % PASTEL_PALETTE.length;
     const color = PASTEL_PALETTE[colorIndex] ?? "#A5D8FF";
     const borderColor = darkenHex(color, 24);
 
