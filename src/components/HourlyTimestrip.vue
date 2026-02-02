@@ -6,8 +6,17 @@ import { useMarkwhenStore } from "../Markwhen/markwhenStore";
 
 const markwhenStore = useMarkwhenStore();
 
-const HOUR_WIDTH = 60; // pixels per hour
+const HOUR_WIDTH = 60; // default pixels per hour
 const MARKER_HOURS = 2;
+const hourWidth = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return HOUR_WIDTH;
+  const raw = header.hourWidth;
+  if (raw === undefined || raw === null) return HOUR_WIDTH;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return HOUR_WIDTH;
+  return Math.min(200, Math.max(1, value));
+});
 const LABEL_HEIGHT = 24;
 const LEGEND_GAP = 25;
 const LANE_HEIGHT = 20;
@@ -343,7 +352,7 @@ const hourMarkers = computed((): HourMarker[] => {
 
 const totalWidth = computed(() =>
   hourMarkers.value.reduce(
-    (sum, marker) => sum + marker.spanHours * HOUR_WIDTH,
+    (sum, marker) => sum + marker.spanHours * hourWidth.value,
     0
   )
 );
@@ -367,8 +376,11 @@ const eventBars = computed((): EventBar[] => {
     const durationMinutes = visibleMinutesBetween(startTime, endTime);
     if (durationMinutes <= 0) continue;
     const left =
-      (visibleMinutesBetween(start, startTime) / 60) * HOUR_WIDTH;
-    const width = Math.max((durationMinutes / 60) * HOUR_WIDTH, MIN_BAR_WIDTH);
+      (visibleMinutesBetween(start, startTime) / 60) * hourWidth.value;
+    const width = Math.max(
+      (durationMinutes / 60) * hourWidth.value,
+      MIN_BAR_WIDTH
+    );
     const title =
       eventy.firstLine?.restTrimmed ||
       eventy.firstLine?.rest ||
@@ -498,7 +510,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
         :key="index"
         class="hour-marker"
         :class="{ 'day-start': marker.isStartOfDay }"
-        :style="{ width: `${marker.spanHours * HOUR_WIDTH}px` }"
+        :style="{ width: `${marker.spanHours * hourWidth}px` }"
       >
           <span class="hour-label">{{ marker.label }}</span>
         </div>
