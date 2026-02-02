@@ -22,6 +22,7 @@ const LEGEND_GAP = 25;
 const BAR_OFFSET = 12;
 const LANE_HEIGHT = 20;
 const LANE_GAP = 6;
+const SUBLANE_GAP = 0;
 const MIN_BAR_WIDTH = 6;
 const PASTEL_PALETTE = [
   "#A5D8FF",
@@ -580,15 +581,13 @@ const rowLayouts = computed(() => {
   let offset = 0;
   const layout = rows.map((row) => {
     const height =
-      row.sublaneCount * (laneHeight.value + LANE_GAP) - LANE_GAP;
+      row.sublaneCount * (laneHeight.value + SUBLANE_GAP) - SUBLANE_GAP;
     const top = offset;
     offset += height + LANE_GAP;
     return { ...row, top, height };
   });
 
-  const contentHeight = layout.length
-    ? offset - LANE_GAP
-    : 0;
+  const contentHeight = layout.length ? offset - LANE_GAP : 0;
 
   return { rows: layout, contentHeight };
 });
@@ -751,7 +750,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
                 legendStackHeight +
                 BAR_OFFSET +
                 (rowTopByKey.get(bar.groupKey) ?? 0) +
-                bar.sublane * (laneHeight + LANE_GAP)
+                bar.sublane * (laneHeight + SUBLANE_GAP)
               }px`,
               height: `${laneHeight}px`,
               background: bar.color,
