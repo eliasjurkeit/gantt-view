@@ -953,7 +953,10 @@ const laneBands = computed<SectionBand[]>(() => {
     const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
     const split =
       row.targetSublaneCount > 0 && row.targetSublaneCount < row.sublaneCount
-        ? rowAreaOffset + row.top + row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP)
+        ? rowAreaOffset +
+          row.top +
+          row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP) -
+          1
         : undefined;
     bands.push({
       title: row.label,
@@ -1026,7 +1029,10 @@ const sidebarLaneBands = computed<SectionBand[]>(() => {
     const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
     const split =
       row.targetSublaneCount > 0 && row.targetSublaneCount < row.sublaneCount
-        ? rowAreaOffset + row.top + row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP)
+        ? rowAreaOffset +
+          row.top +
+          row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP) -
+          1
         : undefined;
     bands.push({
       title: row.label,
@@ -1417,7 +1423,6 @@ onBeforeUnmount(() => {
   height: 0;
   box-sizing: border-box;
   pointer-events: none;
-  transform: translateY(-0.5px);
 }
 
 .gantt-sidebar-section-band {
@@ -1636,7 +1641,6 @@ onBeforeUnmount(() => {
   height: 0;
   box-sizing: border-box;
   pointer-events: none;
-  transform: translateY(-0.5px);
 }
 
 .section-block {
