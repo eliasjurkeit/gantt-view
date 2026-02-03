@@ -72,6 +72,7 @@ const bandLayerStyle = computed(() => props.containerStyleOverrides ?? {});
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
 }
 
 .lane-region {
@@ -79,6 +80,7 @@ const bandLayerStyle = computed(() => props.containerStyleOverrides ?? {});
   left: 0;
   right: 0;
   box-sizing: border-box;
+  z-index: 2;
 }
 
 .lane-region-split {
@@ -96,7 +98,7 @@ const bandLayerStyle = computed(() => props.containerStyleOverrides ?? {});
   right: 0;
   box-sizing: border-box;
   padding: 6px 8px;
-  z-index: 0;
+  z-index: 1;
 }
 
 .section-region-label {

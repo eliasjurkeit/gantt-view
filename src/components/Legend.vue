@@ -111,7 +111,7 @@ const props = defineProps<{
   height: 100%;
   position: relative;
   overflow: visible;
-  z-index: 1;
+  z-index: 0;
 }
 
 .hour-marker.dark {
