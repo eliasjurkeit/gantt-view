@@ -3,7 +3,7 @@ import { computed, defineEmits, defineExpose, defineProps, ref } from "vue";
 
 import Band from "./Band.vue";
 import Bar from "./Bar.vue";
-import Legend from "./Legend.vue";
+import TimestreamLegend from "./TimestreamLegend.vue";
 import type { BandRegion, DayLabel, HourMarker, RenderedEventBar } from "./types";
 
 const props = defineProps<{
@@ -19,7 +19,7 @@ const props = defineProps<{
   sectionRegions: BandRegion[];
   visibleEventBars: RenderedEventBar[];
   laneRowHeight: number;
-  rowTopOffsetByKey: Record<string, number>;
+  laneTopOffsetByKey: Record<string, number>;
   hourWidth: number;
   isDarkTheme: boolean;
 }>();
@@ -64,7 +64,7 @@ defineExpose({
         :container-style-overrides="{ width: `${timelineWidth}px`, height: `${timelineHeight}px`, zIndex: 1 }"
         :is-dark-theme="isDarkTheme"
       />
-      <Legend
+      <TimestreamLegend
         :day-labels="dayLabels"
         :day-background-rows="dayBackgroundRows"
         :hour-markers="hourMarkers"
@@ -78,7 +78,7 @@ defineExpose({
         :lane-row-height="laneRowHeight"
         :header-stack-height="headerStackHeight"
         :content-vertical-offset="contentVerticalOffset"
-        :row-top-offset-by-key="rowTopOffsetByKey"
+        :lane-top-offset-by-key="laneTopOffsetByKey"
         :timeline-height="timelineHeight"
         :is-dark-theme="isDarkTheme"
       />

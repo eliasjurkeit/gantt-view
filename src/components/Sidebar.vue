@@ -7,12 +7,12 @@ import type { BandRegion } from "./types";
 const props = defineProps<{
   sidebarWidth: number;
   timelineHeight: number;
-  rowAreaOffset: number;
+  laneAreaOffset: number;
   labelAreaHeight: number;
   laneRegions: BandRegion[];
   sectionRegions: BandRegion[];
   sectionTitleSize: number;
-  sidebarRows: Array<{
+  sidebarLanes: Array<{
     key: string;
     label: string;
     height: number;
@@ -42,7 +42,7 @@ const sidebarStyle = computed(() => ({
 
 const contentStyle = computed(() => ({
   height: `${props.timelineHeight}px`,
-  paddingTop: `${props.rowAreaOffset + props.labelAreaHeight}px`,
+  paddingTop: `${props.laneAreaOffset + props.labelAreaHeight}px`,
 }));
 const bandsStyle = computed(() => ({
   height: `${props.timelineHeight}px`,
@@ -73,28 +73,28 @@ defineExpose({
           :is-dark-theme="isDarkTheme"
         />
         <div
-          v-for="(row, index) in sidebarRows"
-          :key="row.key"
-          class="gantt-sidebar-row"
+          v-for="(lane, index) in sidebarLanes"
+          :key="lane.key"
+          class="gantt-sidebar-lane"
           :style="{
-            height: `${row.height}px`,
-            marginBottom: index === sidebarRows.length - 1 ? '0px' : `${row.nextGap}px`,
+            height: `${lane.height}px`,
+            marginBottom: index === sidebarLanes.length - 1 ? '0px' : `${lane.nextGap}px`,
           }"
-          :title="row.label"
+          :title="lane.label"
         >
           <div
             class="gantt-sidebar-rect"
             :style="{
-              height: `${row.height}px`,
-              background: row.color,
-              borderTopColor: row.borderColor,
-              borderBottomColor: row.borderColor,
+              height: `${lane.height}px`,
+              background: lane.color,
+              borderTopColor: lane.borderColor,
+              borderBottomColor: lane.borderColor,
             }"
           >
-            <span class="gantt-sidebar-text">{{ row.label }}</span>
+            <span class="gantt-sidebar-text">{{ lane.label }}</span>
             <div class="gantt-sidebar-totals">
               <div
-                v-for="(total, idx) in row.totals"
+                v-for="(total, idx) in lane.totals"
                 :key="idx"
                 class="gantt-sidebar-total"
                 :style="{ height: `${laneRowHeight}px` }"
@@ -107,7 +107,7 @@ defineExpose({
             </div>
           </div>
         </div>
-        <div class="gantt-sidebar-total-row">
+        <div class="gantt-sidebar-total-lane">
           <span class="gantt-sidebar-total-label">
             {{ totalLabel }}
           </span>
@@ -156,7 +156,7 @@ defineExpose({
   position: relative;
 }
 
-.gantt-sidebar-row {
+.gantt-sidebar-lane {
   display: flex;
   align-items: center;
   box-sizing: border-box;
@@ -228,7 +228,7 @@ defineExpose({
   color: #e2e8f0;
 }
 
-.gantt-sidebar-total-row {
+.gantt-sidebar-total-lane {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -238,7 +238,7 @@ defineExpose({
   z-index: 1;
 }
 
-.gantt-sidebar.dark .gantt-sidebar-total-row {
+.gantt-sidebar.dark .gantt-sidebar-total-lane {
   border-top-color: rgba(226, 232, 240, 0.2);
 }
 

@@ -8,7 +8,7 @@ const props = defineProps<{
   laneRowHeight: number;
   headerStackHeight: number;
   contentVerticalOffset: number;
-  rowTopOffsetByKey: Record<string, number>;
+  laneTopOffsetByKey: Record<string, number>;
   timelineHeight: number;
   isDarkTheme: boolean;
 }>();
@@ -27,7 +27,7 @@ const props = defineProps<{
         top: `${
           headerStackHeight +
           contentVerticalOffset +
-          (rowTopOffsetByKey[bar.groupKey] ?? 0) +
+          (laneTopOffsetByKey[bar.groupKey] ?? 0) +
           bar.sublaneIndex * laneRowHeight
         }px`,
         height: `${laneRowHeight}px`,

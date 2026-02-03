@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { DateTime } from "luxon";
 import { iter, isEvent, toDateRange } from "@markwhen/parser";
 import { useMarkwhenStore } from "./markwhenStore";
-import Canvas from "./components/Canvas.vue";
+import Timestream from "./components/Timestream.vue";
 import Sidebar from "./components/Sidebar.vue";
 import type {
   BandRegion,
@@ -602,8 +602,8 @@ const renderedEventBars = computed((): RenderedEventBar[] => {
   return bars.map(({ startTime, endTime, ...rest }) => rest);
 });
 
-const rowLayouts = computed(() => {
-  const rowsMap = new Map<
+const laneLayouts = computed(() => {
+  const lanesMap = new Map<
     string,
     {
       laneIndex: number;
@@ -626,7 +626,7 @@ const rowLayouts = computed(() => {
       return PASTEL_PALETTE[Math.abs(hashString(bar.groupKey)) % PASTEL_PALETTE.length];
     })();
     const laneBorder = darkenHex(laneColor, 24);
-    const entry = rowsMap.get(bar.groupKey) ?? {
+    const entry = lanesMap.get(bar.groupKey) ?? {
       laneIndex: bar.laneIndex,
       sublaneCount: 0,
       color: laneColor,
@@ -655,10 +655,10 @@ const rowLayouts = computed(() => {
         entry.sectionName = bar.sectionName;
       }
     }
-    rowsMap.set(bar.groupKey, entry);
+    lanesMap.set(bar.groupKey, entry);
   }
 
-  const rows = Array.from(rowsMap.entries())
+  const lanes = Array.from(lanesMap.entries())
     .map(([key, value]) => ({
       key,
       label: key,
@@ -673,31 +673,31 @@ const rowLayouts = computed(() => {
     .sort((a, b) => a.laneIndex - b.laneIndex);
 
   let offset = 0;
-  const layout = rows.map((row, index) => {
-    const height = row.sublaneCount * laneRowHeight.value;
+  const layout = lanes.map((lane, index) => {
+    const height = lane.sublaneCount * laneRowHeight.value;
     const top = offset;
     const gapToNext =
-      index === rows.length - 1
+      index === lanes.length - 1
         ? 0
         : laneRowGap.value +
-          (row.sectionName === rows[index + 1].sectionName ? 0 : sectionGap.value + sectionPadding.value * 2);
+          (lane.sectionName === lanes[index + 1].sectionName ? 0 : sectionGap.value + sectionPadding.value * 2);
     offset += height + gapToNext;
-    return { ...row, top, height, nextGap: gapToNext };
+    return { ...lane, top, height, nextGap: gapToNext };
   });
 
   const tailGap =
-    rows.length && rows[rows.length - 1].sectionName ? sectionPadding.value + sectionGap.value : 0;
+    lanes.length && lanes[lanes.length - 1].sectionName ? sectionPadding.value + sectionGap.value : 0;
 
   const contentHeight = offset + tailGap;
 
-  return { rows: layout, contentHeight };
+  return { lanes: layout, contentHeight };
 });
 
-const sidebarRows = computed(() => rowLayouts.value.rows);
+const sidebarLanes = computed(() => laneLayouts.value.lanes);
 const sidebarTotals = computed(() => {
   const totals: number[] = [];
-  rowLayouts.value.rows.forEach((row) => {
-    row.totals.forEach((value, idx) => {
+  laneLayouts.value.lanes.forEach((lane) => {
+    lane.totals.forEach((value, idx) => {
       const numeric = Number(value);
       if (!Number.isFinite(numeric)) return;
       if (totals[idx] === undefined) totals[idx] = 0;
@@ -707,33 +707,33 @@ const sidebarTotals = computed(() => {
   return totals.map(formatHours);
 });
 
-const rowTopOffsetByKey = computed<Record<string, number>>(() => {
+const laneTopOffsetByKey = computed<Record<string, number>>(() => {
   const map: Record<string, number> = {};
-  rowLayouts.value.rows.forEach((row) => {
-    map[row.key] = row.top;
+  laneLayouts.value.lanes.forEach((lane) => {
+    map[lane.key] = lane.top;
   });
   return map;
 });
 
-const buildSectionRegions = (rowAreaOffset: number): BandRegion[] => {
+const buildSectionRegions = (laneAreaOffset: number): BandRegion[] => {
   const bands = new Map<
     string,
     { label: string; minTop: number; maxBottom: number; backgroundColor: string; borderColor: string }
   >();
   const bandAreaBottom =
-    rowAreaOffset + Math.max(0, rowLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
+    laneAreaOffset + Math.max(0, laneLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
 
-  rowLayouts.value.rows.forEach((row) => {
-    if (!row.sectionName) return;
-    const colors = sectionsInfo.value.sectionColors.get(row.sectionName);
+  laneLayouts.value.lanes.forEach((lane) => {
+    if (!lane.sectionName) return;
+    const colors = sectionsInfo.value.sectionColors.get(lane.sectionName);
     const backgroundColor = colors?.fill ?? "rgba(148, 163, 184, 0.12)";
     const borderColor = colors?.border ?? "rgba(148, 163, 184, 0.4)";
-    const top = rowAreaOffset + row.top;
-    const bottom = top + row.height;
-    const existing = bands.get(row.sectionName);
+    const top = laneAreaOffset + lane.top;
+    const bottom = top + lane.height;
+    const existing = bands.get(lane.sectionName);
     if (!existing) {
-      bands.set(row.sectionName, {
-        label: row.sectionName,
+      bands.set(lane.sectionName, {
+        label: lane.sectionName,
         minTop: top,
         maxBottom: bottom,
         backgroundColor,
@@ -762,20 +762,20 @@ const buildSectionRegions = (rowAreaOffset: number): BandRegion[] => {
     .sort((a, b) => a.topOffset - b.topOffset);
 };
 
-const buildLaneRegions = (rowAreaOffset: number): BandRegion[] => {
+const buildLaneRegions = (laneAreaOffset: number): BandRegion[] => {
   const opacity = laneBandOpacity.value;
-  return rowLayouts.value.rows.map((row) => {
-    const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
+  return laneLayouts.value.lanes.map((lane) => {
+    const rgb = hexToRgb(lane.color) ?? { r: 148, g: 163, b: 184 };
     const split =
-      row.targetSublaneCount > 0 && row.targetSublaneCount < row.sublaneCount
-        ? rowAreaOffset + row.top + row.targetSublaneCount * laneRowHeight.value - 1
+      lane.targetSublaneCount > 0 && lane.targetSublaneCount < lane.sublaneCount
+        ? laneAreaOffset + lane.top + lane.targetSublaneCount * laneRowHeight.value - 1
         : undefined;
     return {
-      label: row.label,
-      topOffset: rowAreaOffset + row.top,
-      height: row.height,
+      label: lane.label,
+      topOffset: laneAreaOffset + lane.top,
+      height: lane.height,
       backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
-      borderColor: row.borderColor,
+      borderColor: lane.borderColor,
       splitOffset: split,
     };
   });
@@ -788,24 +788,24 @@ const sectionRegions = computed<BandRegion[]>(() =>
   buildSectionRegions(headerStackHeight.value + BAR_VERTICAL_OFFSET)
 );
 const laneRegions = computed<BandRegion[]>(() => buildLaneRegions(headerStackHeight.value + BAR_VERTICAL_OFFSET));
-const sidebarRowAreaOffset = computed(() =>
+const sidebarLaneAreaOffset = computed(() =>
   Math.max(0, headerStackHeight.value + BAR_VERTICAL_OFFSET - LABEL_HEIGHT)
 );
 const sidebarSectionRegions = computed<BandRegion[]>(() =>
-  buildSectionRegions(sidebarRowAreaOffset.value + LABEL_HEIGHT)
+  buildSectionRegions(sidebarLaneAreaOffset.value + LABEL_HEIGHT)
 );
 const sidebarLaneRegions = computed<BandRegion[]>(() =>
-  buildLaneRegions(sidebarRowAreaOffset.value + LABEL_HEIGHT)
+  buildLaneRegions(sidebarLaneAreaOffset.value + LABEL_HEIGHT)
 );
 
 const timelineContentHeight = computed(
-  () => headerStackHeight.value + BAR_VERTICAL_OFFSET + rowLayouts.value.contentHeight + 12
+  () => headerStackHeight.value + BAR_VERTICAL_OFFSET + laneLayouts.value.contentHeight + 12
 );
 
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
-const timelineRef = ref<InstanceType<typeof Canvas> | null>(null);
+const timelineRef = ref<InstanceType<typeof Timestream> | null>(null);
 const isSyncingScroll = ref(false);
 const viewportHeight = ref(0);
 const timelineHeight = computed(() => Math.max(timelineContentHeight.value, viewportHeight.value));
@@ -848,12 +848,12 @@ onBeforeUnmount(() => {
         ref="sidebarRef"
         :sidebar-width="sidebarWidth"
         :timeline-height="timelineHeight"
-        :row-area-offset="sidebarRowAreaOffset"
+        :lane-area-offset="sidebarLaneAreaOffset"
         :label-area-height="LABEL_HEIGHT"
         :lane-regions="sidebarLaneRegions"
         :section-regions="sidebarSectionRegions"
         :section-title-size="sectionTitleFontSize"
-        :sidebar-rows="sidebarRows"
+        :sidebar-lanes="sidebarLanes"
         :lane-row-height="laneRowHeight"
         :target-label="targetLabel"
         :actual-label="actualLabel"
@@ -863,7 +863,7 @@ onBeforeUnmount(() => {
         @scroll="syncScroll('sidebar')"
         @resize-start="onResizeStart"
       />
-      <Canvas
+      <Timestream
         ref="timelineRef"
         :timeline-width="timelineWidth"
         :timeline-height="timelineHeight"
@@ -877,7 +877,7 @@ onBeforeUnmount(() => {
         :section-regions="sectionRegions"
         :visible-event-bars="renderedEventBars"
         :lane-row-height="laneRowHeight"
-        :row-top-offset-by-key="rowTopOffsetByKey"
+        :lane-top-offset-by-key="laneTopOffsetByKey"
         :hour-width="hourWidth"
         :is-dark-theme="isDark"
         @scroll="syncScroll('timeline')"
