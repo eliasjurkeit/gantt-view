@@ -22,7 +22,6 @@ const LEGEND_GAP = 25;
 const BAR_OFFSET = 12;
 const LANE_HEIGHT = 20;
 const DEFAULT_LANE_GAP = 6;
-const SUBLANE_GAP = 0;
 const MIN_BAR_WIDTH = 6;
 const DEFAULT_SECTION_GAP = 12;
 const PASTEL_PALETTE = [
@@ -43,7 +42,6 @@ const TARGET_BAR_COLOR = "#A5D8FF";
 const ACTUAL_BAR_COLOR = "#CDEAC0";
 
 interface HourMarker {
-  hour: number;
   dateTime: DateTime;
   label: string;
   isStartOfDay: boolean;
@@ -126,62 +124,30 @@ const headerOptions = computed(() => {
     : undefined;
 });
 
-const laneHeight = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return LANE_HEIGHT;
-  const raw = header.laneHeight;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return LANE_HEIGHT;
-  return Math.min(60, Math.max(8, value));
-});
+const readNumericHeader = (key: string, fallback: number, min: number, max: number) =>
+  computed(() => {
+    const header = headerOptions.value;
+    if (!header) return fallback;
+    const value = Number(header[key]);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.min(max, Math.max(min, value));
+  });
 
-const laneGap = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return DEFAULT_LANE_GAP;
-  const raw = header.laneGap;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return DEFAULT_LANE_GAP;
-  return Math.min(32, Math.max(0, value));
-});
+const readStringHeader = (key: string, fallback: string) =>
+  computed(() => {
+    const raw = headerOptions.value?.[key];
+    return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : fallback;
+  });
 
-const barRadius = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return 6;
-  const raw = header.barRadius;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return 6;
-  return Math.min(24, Math.max(0, value));
-});
-
-const clampFontSize = (raw: unknown, fallback: number) => {
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return fallback;
-  return Math.min(32, Math.max(8, value));
-};
-
-const sectionOpacity = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return 0.12;
-  const raw = header.sectionBandOpacity;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return 0.12;
-  return Math.min(1, Math.max(0, value));
-});
-
-const laneBandOpacity = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return 0.08;
-  const raw = header.laneBandOpacity;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return 0.08;
-  return Math.min(1, Math.max(0, value));
-});
-
-const sectionTitleFontSize = computed(() =>
-  clampFontSize(headerOptions.value?.sectionTitleFontSize, 12)
-);
+const laneHeight = readNumericHeader("laneHeight", LANE_HEIGHT, 8, 60);
+const laneGap = readNumericHeader("laneGap", DEFAULT_LANE_GAP, 0, 32);
+const barRadius = readNumericHeader("barRadius", 6, 0, 24);
+const sectionOpacity = readNumericHeader("sectionBandOpacity", 0.12, 0, 1);
+const laneBandOpacity = readNumericHeader("laneBandOpacity", 0.08, 0, 1);
+const sectionTitleFontSize = readNumericHeader("sectionTitleFontSize", 12, 8, 32);
 
 // Padding inside a section between its outer lanes and the section border.
+// min is dynamic so this one stays as a full computed.
 const sectionPadding = computed(() => {
   const header = headerOptions.value;
   const minPadding = sectionTitleFontSize.value + 6;
@@ -192,39 +158,11 @@ const sectionPadding = computed(() => {
   return Math.min(64, Math.max(minPadding, value));
 });
 
-// Extra gap applied only between different sections (measured from the section border).
-const sectionGap = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return DEFAULT_SECTION_GAP;
-  const raw = header.sectionGap;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return DEFAULT_SECTION_GAP;
-  return Math.min(96, Math.max(0, value));
-});
+const sectionGap = readNumericHeader("sectionGap", DEFAULT_SECTION_GAP, 0, 96);
 
-const targetLabel = computed(() => {
-  const header = headerOptions.value;
-  const raw = header?.targetLabel;
-  return typeof raw === "string" && raw.trim().length > 0
-    ? raw.trim()
-    : "Target";
-});
-
-const actualLabel = computed(() => {
-  const header = headerOptions.value;
-  const raw = header?.actualLabel;
-  return typeof raw === "string" && raw.trim().length > 0
-    ? raw.trim()
-    : "Actual";
-});
-
-const totalLabel = computed(() => {
-  const header = headerOptions.value;
-  const raw = header?.totalLabel;
-  return typeof raw === "string" && raw.trim().length > 0
-    ? raw.trim()
-    : "Total";
-});
+const targetLabel = readStringHeader("targetLabel", "Target");
+const actualLabel = readStringHeader("actualLabel", "Actual");
+const totalLabel = readStringHeader("totalLabel", "Total");
 
 const skippedDays = computed(() => {
   const header = headerOptions.value;
@@ -407,14 +345,13 @@ const visibleMinutesBetween = (start: DateTime, end: DateTime) => {
   let minutes = 0;
   let day = start.startOf("day");
   const lastDay = end.startOf("day");
+  const segments = getDailySegments();
 
   while (day <= lastDay) {
     if (isSkippedDay(day)) {
       day = day.plus({ days: 1 });
       continue;
     }
-
-    const segments = getDailySegments();
     for (const segment of segments) {
       const dayStart = day.plus({ minutes: segment.startMinutes });
       const dayEnd = day.plus({ minutes: segment.endMinutes });
@@ -441,13 +378,10 @@ const hourMarkers = computed((): HourMarker[] => {
 
   let day = start.startOf("day");
   const lastDay = end.startOf("day");
+  const segments = getDailySegments();
+  if (segments.length === 0) return markers;
   while (day <= lastDay) {
     if (isSkippedDay(day)) {
-      day = day.plus({ days: 1 });
-      continue;
-    }
-    const segments = getDailySegments();
-    if (segments.length === 0) {
       day = day.plus({ days: 1 });
       continue;
     }
@@ -474,7 +408,6 @@ const hourMarkers = computed((): HourMarker[] => {
           continue;
         }
         markers.push({
-          hour: markerTime.hour,
           dateTime: markerTime,
           label: `${markerTime.toFormat("HH:mm")} - ${markerEnd.toFormat(
             "HH:mm"
@@ -561,11 +494,7 @@ const sectionsInfo = computed(() => {
 
   const registerSection = (name: string) => {
     if (sectionColors.has(name)) return sectionColors.get(name)!;
-    const colorIndex =
-      PASTEL_PALETTE.length === 0
-        ? 0
-        : sectionOrder.length % PASTEL_PALETTE.length;
-    const base = PASTEL_PALETTE[colorIndex] ?? "#A5D8FF";
+    const base = PASTEL_PALETTE[sectionOrder.length % PASTEL_PALETTE.length];
     const rgb = hexToRgb(base) ?? { r: 148, g: 163, b: 184 };
     const fill = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
     const border = darkenHex(base, 28);
@@ -600,6 +529,9 @@ const sectionsInfo = computed(() => {
   return { eventSection, sectionColors };
 });
 
+const formatHours = (value: number) =>
+  Math.round(value * 10) % 10 === 0 ? `${Math.round(value)}` : value.toFixed(1);
+
 const eventBars = computed((): EventBar[] => {
   const transformed = markwhenStore.markwhen?.transformed;
   if (!transformed || !timeRange.value) {
@@ -619,11 +551,7 @@ const eventBars = computed((): EventBar[] => {
     const endTime = dr.toDateTime;
     const durationMinutes = visibleMinutesBetween(startTime, endTime);
     if (durationMinutes <= 0) continue;
-    const durationHoursValue = durationMinutes / 60;
-    const durationHours =
-      Math.round(durationHoursValue * 10) % 10 === 0
-        ? `${Math.round(durationHoursValue)}`
-        : durationHoursValue.toFixed(1);
+    const durationHours = formatHours(durationMinutes / 60);
     const left =
       (visibleMinutesBetween(start, startTime) / 60) * hourWidth.value;
     const width = Math.max(
@@ -759,11 +687,7 @@ const rowLayouts = computed(() => {
         const base = sectionsInfo.value.sectionColors.get(bar.sectionName)?.base;
         if (base) return base;
       }
-      const paletteIndex =
-        PASTEL_PALETTE.length === 0
-          ? 0
-          : Math.abs(hashString(bar.groupKey)) % PASTEL_PALETTE.length;
-      return PASTEL_PALETTE[paletteIndex] ?? "#A5D8FF";
+      return PASTEL_PALETTE[Math.abs(hashString(bar.groupKey)) % PASTEL_PALETTE.length];
     })();
     const laneBorder = darkenHex(laneColor, 24);
     const entry = rowsMap.get(bar.groupKey) ?? {
@@ -811,18 +735,14 @@ const rowLayouts = computed(() => {
       borderColor: value.borderColor,
       sectionName: value.sectionName,
       targetSublaneCount: value.targetSublaneCount,
-      totals: value.totals.map((total) =>
-        Math.round(total * 10) % 10 === 0
-          ? `${Math.round(total)}`
-          : total.toFixed(1)
-     ),
+      totals: value.totals.map(formatHours),
    }))
     .sort((a, b) => a.lane - b.lane);
 
   let offset = 0;
   const layout = rows.map((row, index) => {
     const height =
-      row.sublaneCount * (laneHeight.value + SUBLANE_GAP) - SUBLANE_GAP;
+      row.sublaneCount * laneHeight.value;
     const top = offset;
     const gapToNext =
       index === rows.length - 1
@@ -856,11 +776,7 @@ const sidebarTotals = computed(() => {
       totals[idx] += numeric;
     });
   });
-  return totals.map((total) =>
-    Math.round(total * 10) % 10 === 0
-      ? `${Math.round(total)}`
-      : total.toFixed(1)
-  );
+  return totals.map(formatHours);
 });
 
 const rowTopByKey = computed(() => {
@@ -871,12 +787,11 @@ const rowTopByKey = computed(() => {
   return map;
 });
 
-const sectionBands = computed<SectionBand[]>(() => {
+const makeSectionBands = (rowAreaOffset: number): SectionBand[] => {
   const bands = new Map<
     string,
     { title: string; minTop: number; maxBottom: number; fill: string; border: string }
   >();
-  const rowAreaOffset = legendStackHeight.value + BAR_OFFSET;
   const bandAreaBottom =
     rowAreaOffset +
     Math.max(0, rowLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
@@ -918,124 +833,42 @@ const sectionBands = computed<SectionBand[]>(() => {
       };
     })
     .sort((a, b) => a.top - b.top);
-});
+};
 
-const laneBands = computed<SectionBand[]>(() => {
-  const bands: SectionBand[] = [];
-  const rowAreaOffset = legendStackHeight.value + BAR_OFFSET;
-  const opacity = laneBandOpacity.value; // dependency for fill
-  rowLayouts.value.rows.forEach((row) => {
+const makeLaneBands = (rowAreaOffset: number): SectionBand[] => {
+  const opacity = laneBandOpacity.value;
+  return rowLayouts.value.rows.map((row) => {
     const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
     const split =
       row.targetSublaneCount > 0 && row.targetSublaneCount < row.sublaneCount
-        ? rowAreaOffset +
-          row.top +
-          row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP) -
-          1
+        ? rowAreaOffset + row.top + row.targetSublaneCount * laneHeight.value - 1
         : undefined;
-    bands.push({
+    return {
       title: row.label,
       top: rowAreaOffset + row.top,
       height: row.height,
       fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
       border: row.borderColor,
       split,
-    });
+    };
   });
-  return bands;
-});
+};
 
-const sidebarSectionBands = computed<SectionBand[]>(() => {
-  const bands = new Map<
-    string,
-    { title: string; minTop: number; maxBottom: number; fill: string; border: string }
-  >();
-  const rowAreaOffset = sidebarRowsOffset.value + LABEL_HEIGHT;
-  const bandAreaBottom =
-    rowAreaOffset +
-    Math.max(0, rowLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
+const sectionBands = computed<SectionBand[]>(() =>
+  makeSectionBands(legendStackHeight.value + BAR_OFFSET)
+);
+const laneBands = computed<SectionBand[]>(() =>
+  makeLaneBands(legendStackHeight.value + BAR_OFFSET)
+);
+const sidebarSectionBands = computed<SectionBand[]>(() =>
+  makeSectionBands(sidebarRowsOffset.value + LABEL_HEIGHT)
+);
+const sidebarLaneBands = computed<SectionBand[]>(() =>
+  makeLaneBands(sidebarRowsOffset.value + LABEL_HEIGHT)
+);
 
-  rowLayouts.value.rows.forEach((row) => {
-    if (!row.sectionName) return;
-    const colors = sectionsInfo.value.sectionColors.get(row.sectionName);
-    const fill = colors?.fill ?? "rgba(148, 163, 184, 0.12)";
-    const border = colors?.border ?? "rgba(148, 163, 184, 0.4)";
-    const top = rowAreaOffset + row.top;
-    const bottom = top + row.height;
-    const existing = bands.get(row.sectionName);
-    if (!existing) {
-      bands.set(row.sectionName, {
-        title: row.sectionName,
-        minTop: top,
-        maxBottom: bottom,
-        fill,
-        border,
-      });
-    } else {
-      existing.minTop = Math.min(existing.minTop, top);
-      existing.maxBottom = Math.max(existing.maxBottom, bottom);
-    }
-  });
-
-  return Array.from(bands.values())
-    .map((band) => {
-      const paddedTop = band.minTop - sectionPadding.value;
-      const paddedBottom = band.maxBottom + sectionPadding.value;
-      const top = Math.max(0, paddedTop);
-      const bottom = Math.min(bandAreaBottom, paddedBottom);
-      return {
-        title: band.title,
-        top,
-        height: Math.max(0, bottom - top),
-        fill: band.fill,
-        border: band.border,
-      };
-    })
-    .sort((a, b) => a.top - b.top);
-});
-
-const sidebarLaneBands = computed<SectionBand[]>(() => {
-  const bands: SectionBand[] = [];
-  const rowAreaOffset = sidebarRowsOffset.value + LABEL_HEIGHT;
-  const opacity = laneBandOpacity.value; // dependency for fill
-  rowLayouts.value.rows.forEach((row) => {
-    const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
-    const split =
-      row.targetSublaneCount > 0 && row.targetSublaneCount < row.sublaneCount
-        ? rowAreaOffset +
-          row.top +
-          row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP) -
-          1
-        : undefined;
-    bands.push({
-      title: row.label,
-      top: rowAreaOffset + row.top,
-      height: row.height,
-      fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
-      border: row.borderColor,
-      split,
-    });
-  });
-  return bands;
-});
-
-const dateLegendHeight = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return 18;
-  const raw = header.dateLegendHeight;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return 18;
-  return Math.min(80, Math.max(10, value));
-});
-
-const hourLegendHeight = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return 36;
-  const raw = header.hourLegendHeight;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return 36;
-  return Math.min(120, Math.max(16, value));
-});
+const dateLegendHeight = readNumericHeader("dateLegendHeight", 18, 10, 80);
+const hourLegendHeight = readNumericHeader("hourLegendHeight", 36, 16, 120);
 
 const legendStackHeight = computed(
   () => dateLegendHeight.value + hourLegendHeight.value + LEGEND_GAP
@@ -1316,15 +1149,12 @@ onBeforeUnmount(() => {
                 legendStackHeight +
                 BAR_OFFSET +
                 (rowTopByKey.get(bar.groupKey) ?? 0) +
-                bar.sublane * (laneHeight + SUBLANE_GAP)
+                bar.sublane * laneHeight
               }px`,
               height: `${laneHeight}px`,
               background: bar.color,
               borderColor: bar.borderColor,
-              opacity: 1,
               borderRadius: `${barRadius}px`,
-              outline: 'none',
-              backgroundImage: 'none',
             }"
             :title="`${bar.title} (${bar.rangeLabel})`"
           >

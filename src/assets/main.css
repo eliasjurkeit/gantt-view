@@ -14,19 +14,3 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   mix-blend-mode: multiply;
 }
-
-.noScrollBar::-webkit-scrollbar {
-  display: none;
-}
-
-.noScrollBar {
-  scrollbar-width: none;
-}
-
-button {
-  -webkit-tap-highlight-color: transparent;
-}
-
-.safeBottomPadding {
-  padding-bottom: env(safe-area-inset-bottom);
-}
