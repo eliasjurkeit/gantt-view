@@ -3,20 +3,19 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { DateTime } from "luxon";
 import { iter, isEvent, toDateRange } from "@markwhen/parser";
 import { useMarkwhenStore } from "../Markwhen/markwhenStore";
+import TimestripCanvas from "./TimestripCanvas.vue";
+import TimestripSidebar from "./TimestripSidebar.vue";
+import type {
+  DayLabel,
+  HourMarker,
+  SectionBand,
+  VisibleEventBar,
+} from "./types";
 
 const markwhenStore = useMarkwhenStore();
 
-const HOUR_WIDTH = 60; // default pixels per hour
+const HOUR_WIDTH = 60;
 const MARKER_HOURS = 2;
-const hourWidth = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return HOUR_WIDTH;
-  const raw = header.scale;
-  if (raw === undefined || raw === null) return HOUR_WIDTH;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return HOUR_WIDTH;
-  return Math.min(200, Math.max(1, value));
-});
 const LABEL_HEIGHT = 24;
 const LEGEND_GAP = 25;
 const BAR_OFFSET = 12;
@@ -41,47 +40,20 @@ const PASTEL_PALETTE = [
 const TARGET_BAR_COLOR = "#A5D8FF";
 const ACTUAL_BAR_COLOR = "#CDEAC0";
 
-interface HourMarker {
-  dateTime: DateTime;
-  label: string;
-  isStartOfDay: boolean;
-  spanHours: number;
-}
-
-interface DayLabel {
-  label: string;
-  left: number;
-  width: number;
-}
-
-interface EventBar {
-  title: string;
-  left: number;
-  width: number;
-  lane: number;
-  rangeLabel: string;
-  color: string;
-  borderColor: string;
-  durationHours: string;
-  groupKey: string;
-  sublane: number;
-  isIdEvent: boolean;
-  sectionName?: string;
-}
-
 interface DailyHourRange {
   startMinutes: number;
   endMinutes: number;
 }
 
-interface SectionBand {
-  title: string;
-  top: number;
-  height: number;
-  fill: string;
-  border: string;
-  split?: number;
-}
+const hourWidth = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return HOUR_WIDTH;
+  const raw = header.scale;
+  if (raw === undefined || raw === null) return HOUR_WIDTH;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return HOUR_WIDTH;
+  return Math.min(200, Math.max(1, value));
+});
 
 const timeRange = computed(() => {
   const transformed = markwhenStore.markwhen?.transformed;
@@ -104,7 +76,6 @@ const timeRange = computed(() => {
     }
   }
 
-  // Check if we found any events
   if (+earliestTime > +latestTime) {
     return null;
   }
@@ -145,9 +116,10 @@ const barRadius = readNumericHeader("barRadius", 6, 0, 24);
 const sectionOpacity = readNumericHeader("sectionBandOpacity", 0.12, 0, 1);
 const laneBandOpacity = readNumericHeader("laneBandOpacity", 0.08, 0, 1);
 const sectionTitleFontSize = readNumericHeader("sectionTitleFontSize", 12, 8, 32);
+const sectionGap = readNumericHeader("sectionGap", DEFAULT_SECTION_GAP, 0, 96);
+const dateLegendHeight = readNumericHeader("dateLegendHeight", 18, 10, 80);
+const hourLegendHeight = readNumericHeader("hourLegendHeight", 36, 16, 120);
 
-// Padding inside a section between its outer lanes and the section border.
-// min is dynamic so this one stays as a full computed.
 const sectionPadding = computed(() => {
   const header = headerOptions.value;
   const minPadding = sectionTitleFontSize.value + 6;
@@ -157,8 +129,6 @@ const sectionPadding = computed(() => {
   if (!Number.isFinite(value)) return minPadding;
   return Math.min(64, Math.max(minPadding, value));
 });
-
-const sectionGap = readNumericHeader("sectionGap", DEFAULT_SECTION_GAP, 0, 96);
 
 const targetLabel = readStringHeader("targetLabel", "Target");
 const actualLabel = readStringHeader("actualLabel", "Actual");
@@ -189,8 +159,7 @@ const skippedDays = computed(() => {
   return result;
 });
 
-const isSkippedDay = (dateTime: DateTime) =>
-  skippedDays.value.has(dateTime.toISODate());
+const isSkippedDay = (dateTime: DateTime) => skippedDays.value.has(dateTime.toISODate());
 
 const parseTimePart = (value: string) => {
   const trimmed = value.trim();
@@ -394,14 +363,8 @@ const hourMarkers = computed((): HourMarker[] => {
           minutes += 60 * MARKER_HOURS;
           continue;
         }
-        const nextMinutes = Math.min(
-          minutes + 60 * MARKER_HOURS,
-          segment.endMinutes
-        );
-        const markerEnd = DateTime.min(
-          day.plus({ minutes: nextMinutes }),
-          endBound
-        );
+        const nextMinutes = Math.min(minutes + 60 * MARKER_HOURS, segment.endMinutes);
+        const markerEnd = DateTime.min(day.plus({ minutes: nextMinutes }), endBound);
         const spanHours = markerEnd.diff(markerTime, "hours").hours;
         if (spanHours <= 0) {
           minutes = nextMinutes;
@@ -409,9 +372,7 @@ const hourMarkers = computed((): HourMarker[] => {
         }
         markers.push({
           dateTime: markerTime,
-          label: `${markerTime.toFormat("HH:mm")} - ${markerEnd.toFormat(
-            "HH:mm"
-          )}`,
+          label: `${markerTime.toFormat("HH:mm")} - ${markerEnd.toFormat("HH:mm")}`,
           isStartOfDay: minutes === firstSegmentStart,
           spanHours,
         });
@@ -428,10 +389,7 @@ const hourMarkers = computed((): HourMarker[] => {
 });
 
 const totalWidth = computed(() =>
-  hourMarkers.value.reduce(
-    (sum, marker) => sum + marker.spanHours * hourWidth.value,
-    0
-  )
+  hourMarkers.value.reduce((sum, marker) => sum + marker.spanHours * hourWidth.value, 0)
 );
 
 const dayLabels = computed((): DayLabel[] => {
@@ -477,7 +435,7 @@ const dayBackgrounds = computed(() =>
 
 const sectionsInfo = computed(() => {
   const transformed = markwhenStore.markwhen?.transformed;
-  const opacity = sectionOpacity.value; // dependency to recompute fills
+  const opacity = sectionOpacity.value;
   if (!transformed) {
     return {
       eventSection: new Map<string, string>(),
@@ -486,10 +444,7 @@ const sectionsInfo = computed(() => {
   }
 
   const eventSection = new Map<string, string>();
-  const sectionColors = new Map<
-    string,
-    { fill: string; border: string; base: string }
-  >();
+  const sectionColors = new Map<string, { fill: string; border: string; base: string }>();
   const sectionOrder: string[] = [];
 
   const registerSection = (name: string) => {
@@ -518,9 +473,7 @@ const sectionsInfo = computed(() => {
     }
 
     if (Array.isArray(node.children)) {
-      node.children.forEach((child: any, idx: number) =>
-        walk(child, [...path, idx], sectionName)
-      );
+      node.children.forEach((child: any, idx: number) => walk(child, [...path, idx], sectionName));
     }
   };
 
@@ -532,7 +485,7 @@ const sectionsInfo = computed(() => {
 const formatHours = (value: number) =>
   Math.round(value * 10) % 10 === 0 ? `${Math.round(value)}` : value.toFixed(1);
 
-const eventBars = computed((): EventBar[] => {
+const eventBars = computed((): VisibleEventBar[] => {
   const transformed = markwhenStore.markwhen?.transformed;
   if (!transformed || !timeRange.value) {
     return [];
@@ -540,9 +493,7 @@ const eventBars = computed((): EventBar[] => {
 
   const { start } = timeRange.value;
   const eventSection = sectionsInfo.value.eventSection;
-  const bars: Array<
-    EventBar & { startTime: DateTime; endTime: DateTime }
-  > = [];
+  const bars: Array<VisibleEventBar & { startTime: DateTime; endTime: DateTime }> = [];
 
   for (const { eventy, path } of iter(transformed)) {
     if (!isEvent(eventy)) continue;
@@ -552,16 +503,9 @@ const eventBars = computed((): EventBar[] => {
     const durationMinutes = visibleMinutesBetween(startTime, endTime);
     if (durationMinutes <= 0) continue;
     const durationHours = formatHours(durationMinutes / 60);
-    const left =
-      (visibleMinutesBetween(start, startTime) / 60) * hourWidth.value;
-    const width = Math.max(
-      (durationMinutes / 60) * hourWidth.value,
-      MIN_BAR_WIDTH
-    );
-    const title =
-      eventy.firstLine?.restTrimmed ||
-      eventy.firstLine?.rest ||
-      "Event";
+    const left = (visibleMinutesBetween(start, startTime) / 60) * hourWidth.value;
+    const width = Math.max((durationMinutes / 60) * hourWidth.value, MIN_BAR_WIDTH);
+    const title = eventy.firstLine?.restTrimmed || eventy.firstLine?.rest || "Event";
     const hasId = !!eventy.properties?.id;
     const groupKeyRaw =
       (eventy.properties?.id as string | undefined) ??
@@ -573,9 +517,7 @@ const eventBars = computed((): EventBar[] => {
     const rangeLabel =
       startTime.hasSame(endTime, "day")
         ? `${startTime.toFormat("HH:mm")}–${endTime.toFormat("HH:mm")}`
-        : `${startTime.toFormat("MMM d HH:mm")}–${endTime.toFormat(
-            "MMM d HH:mm"
-          )}`;
+        : `${startTime.toFormat("MMM d HH:mm")}–${endTime.toFormat("MMM d HH:mm")}`;
     const color = hasId ? TARGET_BAR_COLOR : ACTUAL_BAR_COLOR;
     const borderColor = darkenHex(color, 24);
 
@@ -594,49 +536,36 @@ const eventBars = computed((): EventBar[] => {
       sectionName,
       startTime,
       endTime,
+      barRadius: barRadius.value,
     });
   }
 
   bars.sort((a, b) => +a.startTime - +b.startTime);
   const groupInfo = new Map<
     string,
-    {
-      bars: Array<
-        EventBar & { startTime: DateTime; endTime: DateTime }
-      >;
-      earliest: DateTime;
-    }
+    { bars: Array<VisibleEventBar & { startTime: DateTime; endTime: DateTime }>; earliest: DateTime }
   >();
 
   for (const bar of bars) {
-    const entry = groupInfo.get(bar.groupKey) ?? {
-      bars: [],
-      earliest: bar.startTime,
-    };
+    const entry = groupInfo.get(bar.groupKey) ?? { bars: [], earliest: bar.startTime };
     entry.bars.push(bar);
     if (+bar.startTime < +entry.earliest) entry.earliest = bar.startTime;
     groupInfo.set(bar.groupKey, entry);
   }
 
-  const groupOrder = Array.from(groupInfo.entries()).sort(
-    (a, b) => +a[1].earliest - +b[1].earliest
-  );
+  const groupOrder = Array.from(groupInfo.entries()).sort((a, b) => +a[1].earliest - +b[1].earliest);
 
-  groupOrder.forEach(([groupKey, info], groupIndex) => {
-    const groupBars = info.bars.sort(
-      (a, b) => +a.startTime - +b.startTime
-    );
+  groupOrder.forEach(([_, info], groupIndex) => {
+    const groupBars = info.bars.sort((a, b) => +a.startTime - +b.startTime);
     const idBars = groupBars.filter((bar) => bar.isIdEvent);
     const nonIdBars = groupBars.filter((bar) => !bar.isIdEvent);
 
     const assignSublanes = (
-      barsToAssign: Array<EventBar & { startTime: DateTime; endTime: DateTime }>,
+      barsToAssign: Array<VisibleEventBar & { startTime: DateTime; endTime: DateTime }>,
       sublaneEnds: DateTime[]
     ) => {
       for (const bar of barsToAssign) {
-        let sublaneIndex = sublaneEnds.findIndex(
-          (endTime) => +bar.startTime >= +endTime
-        );
+        let sublaneIndex = sublaneEnds.findIndex((endTime) => +bar.startTime >= +endTime);
         if (sublaneIndex === -1) {
           sublaneIndex = sublaneEnds.length;
           sublaneEnds.push(bar.endTime);
@@ -713,11 +642,8 @@ const rowLayouts = computed(() => {
       entry.totals[bar.sublane] += duration;
     }
     if (bar.sectionName) {
-      entry.sectionHits[bar.sectionName] =
-        (entry.sectionHits[bar.sectionName] ?? 0) + 1;
-      const currentCount = entry.sectionName
-        ? entry.sectionHits[entry.sectionName] ?? 0
-        : 0;
+      entry.sectionHits[bar.sectionName] = (entry.sectionHits[bar.sectionName] ?? 0) + 1;
+      const currentCount = entry.sectionName ? entry.sectionHits[entry.sectionName] ?? 0 : 0;
       if (entry.sectionHits[bar.sectionName] > currentCount) {
         entry.sectionName = bar.sectionName;
       }
@@ -736,29 +662,24 @@ const rowLayouts = computed(() => {
       sectionName: value.sectionName,
       targetSublaneCount: value.targetSublaneCount,
       totals: value.totals.map(formatHours),
-   }))
+    }))
     .sort((a, b) => a.lane - b.lane);
 
   let offset = 0;
   const layout = rows.map((row, index) => {
-    const height =
-      row.sublaneCount * laneHeight.value;
+    const height = row.sublaneCount * laneHeight.value;
     const top = offset;
     const gapToNext =
       index === rows.length - 1
         ? 0
         : laneGap.value +
-          (row.sectionName === rows[index + 1].sectionName
-            ? 0
-            : sectionGap.value + sectionPadding.value * 2);
+          (row.sectionName === rows[index + 1].sectionName ? 0 : sectionGap.value + sectionPadding.value * 2);
     offset += height + gapToNext;
     return { ...row, top, height, nextGap: gapToNext };
   });
 
   const tailGap =
-    rows.length && rows[rows.length - 1].sectionName
-      ? sectionPadding.value + sectionGap.value
-      : 0;
+    rows.length && rows[rows.length - 1].sectionName ? sectionPadding.value + sectionGap.value : 0;
 
   const contentHeight = offset + tailGap;
 
@@ -779,10 +700,10 @@ const sidebarTotals = computed(() => {
   return totals.map(formatHours);
 });
 
-const rowTopByKey = computed(() => {
-  const map = new Map<string, number>();
+const rowTopByKey = computed<Record<string, number>>(() => {
+  const map: Record<string, number> = {};
   rowLayouts.value.rows.forEach((row) => {
-    map.set(row.key, row.top);
+    map[row.key] = row.top;
   });
   return map;
 });
@@ -793,8 +714,7 @@ const makeSectionBands = (rowAreaOffset: number): SectionBand[] => {
     { title: string; minTop: number; maxBottom: number; fill: string; border: string }
   >();
   const bandAreaBottom =
-    rowAreaOffset +
-    Math.max(0, rowLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
+    rowAreaOffset + Math.max(0, rowLayouts.value.contentHeight - (sectionPadding.value + sectionGap.value));
 
   rowLayouts.value.rows.forEach((row) => {
     if (!row.sectionName) return;
@@ -805,13 +725,7 @@ const makeSectionBands = (rowAreaOffset: number): SectionBand[] => {
     const bottom = top + row.height;
     const existing = bands.get(row.sectionName);
     if (!existing) {
-      bands.set(row.sectionName, {
-        title: row.sectionName,
-        minTop: top,
-        maxBottom: bottom,
-        fill,
-        border,
-      });
+      bands.set(row.sectionName, { title: row.sectionName, minTop: top, maxBottom: bottom, fill, border });
     } else {
       existing.minTop = Math.min(existing.minTop, top);
       existing.maxBottom = Math.max(existing.maxBottom, bottom);
@@ -854,12 +768,8 @@ const makeLaneBands = (rowAreaOffset: number): SectionBand[] => {
   });
 };
 
-const sectionBands = computed<SectionBand[]>(() =>
-  makeSectionBands(legendStackHeight.value + BAR_OFFSET)
-);
-const laneBands = computed<SectionBand[]>(() =>
-  makeLaneBands(legendStackHeight.value + BAR_OFFSET)
-);
+const sectionBands = computed<SectionBand[]>(() => makeSectionBands(legendStackHeight.value + BAR_OFFSET));
+const laneBands = computed<SectionBand[]>(() => makeLaneBands(legendStackHeight.value + BAR_OFFSET));
 const sidebarSectionBands = computed<SectionBand[]>(() =>
   makeSectionBands(sidebarRowsOffset.value + LABEL_HEIGHT)
 );
@@ -867,48 +777,32 @@ const sidebarLaneBands = computed<SectionBand[]>(() =>
   makeLaneBands(sidebarRowsOffset.value + LABEL_HEIGHT)
 );
 
-const dateLegendHeight = readNumericHeader("dateLegendHeight", 18, 10, 80);
-const hourLegendHeight = readNumericHeader("hourLegendHeight", 36, 16, 120);
-
-const legendStackHeight = computed(
-  () => dateLegendHeight.value + hourLegendHeight.value + LEGEND_GAP
-);
-
-const sidebarRowsOffset = computed(() =>
-  Math.max(0, legendStackHeight.value + BAR_OFFSET - LABEL_HEIGHT)
-);
+const legendStackHeight = computed(() => dateLegendHeight.value + hourLegendHeight.value + LEGEND_GAP);
+const sidebarRowsOffset = computed(() => Math.max(0, legendStackHeight.value + BAR_OFFSET - LABEL_HEIGHT));
 
 const totalHeight = computed(
-  () =>
-    legendStackHeight.value +
-    BAR_OFFSET +
-    rowLayouts.value.contentHeight +
-    12
+  () => legendStackHeight.value + BAR_OFFSET + rowLayouts.value.contentHeight + 12
 );
 
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 
-const sidebarScrollRef = ref<HTMLDivElement | null>(null);
-const timestripScrollRef = ref<HTMLDivElement | null>(null);
+const sidebarRef = ref<InstanceType<typeof TimestripSidebar> | null>(null);
+const timestripRef = ref<InstanceType<typeof TimestripCanvas> | null>(null);
 const isSyncingScroll = ref(false);
 const viewportHeight = ref(0);
-const trackHeight = computed(() =>
-  Math.max(totalHeight.value, viewportHeight.value)
-);
+const trackHeight = computed(() => Math.max(totalHeight.value, viewportHeight.value));
 
 const syncScroll = (source: "sidebar" | "timestrip") => {
   if (isSyncingScroll.value) return;
   isSyncingScroll.value = true;
-  const sidebar = sidebarScrollRef.value;
-  const timestrip = timestripScrollRef.value;
-  if (!sidebar || !timestrip) {
-    isSyncingScroll.value = false;
-    return;
-  }
-  if (source === "sidebar") {
-    timestrip.scrollTop = sidebar.scrollTop;
-  } else {
-    sidebar.scrollTop = timestrip.scrollTop;
+  const sidebar = sidebarRef.value;
+  const timestrip = timestripRef.value;
+  if (sidebar && timestrip) {
+    if (source === "sidebar") {
+      timestrip.setScrollTop(sidebar.getScrollTop());
+    } else {
+      sidebar.setScrollTop(timestrip.getScrollTop());
+    }
   }
   requestAnimationFrame(() => {
     isSyncingScroll.value = false;
@@ -916,7 +810,7 @@ const syncScroll = (source: "sidebar" | "timestrip") => {
 };
 
 const updateViewportHeight = () => {
-  viewportHeight.value = timestripScrollRef.value?.clientHeight ?? 0;
+  viewportHeight.value = timestripRef.value?.getClientHeight() ?? 0;
 };
 
 onMounted(() => {
@@ -931,239 +825,44 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="gantt-root" :class="{ dark: isDark }">
-    <div class="gantt-sidebar" :style="{ width: `${sidebarWidth}px` }">
-      <div
-        ref="sidebarScrollRef"
-        class="gantt-sidebar-scroll"
-        @scroll="syncScroll('sidebar')"
-      >
-        <div
-          class="gantt-sidebar-content"
-          :style="{
-            height: `${totalHeight}px`,
-            paddingTop: `${sidebarRowsOffset + LABEL_HEIGHT}px`,
-          }"
-        >
-          <div
-            class="gantt-sidebar-sections"
-            :style="{ height: `${totalHeight}px` }"
-          >
-          <div
-            v-for="(lane, index) in sidebarLaneBands"
-            :key="`lane-${index}`"
-            class="gantt-sidebar-lane-band"
-            :style="{
-              top: `${lane.top}px`,
-              height: `${lane.height}px`,
-              background: lane.fill,
-              borderTop: `1px solid ${lane.border}`,
-              borderBottom: `1px solid ${lane.border}`,
-            }"
-          >
-            <div
-              v-if="lane.split !== undefined"
-              class="gantt-sidebar-lane-split"
-              :style="{
-                top: `${lane.split - lane.top}px`,
-                borderTop: `1px dashed ${lane.border}`,
-              }"
-            ></div>
-          </div>
-            <div
-              v-for="(section, index) in sidebarSectionBands"
-              :key="index"
-              class="gantt-sidebar-section-band"
-              :style="{
-                top: `${section.top}px`,
-                height: `${section.height}px`,
-                background: section.fill,
-                borderTop: `1px solid ${section.border}`,
-                borderBottom: `1px solid ${section.border}`,
-              }"
-            >
-              <span
-                class="gantt-sidebar-section-label"
-                :style="{
-                  fontSize: `${sectionTitleFontSize}px`,
-                }"
-              >
-                {{ section.title }}
-              </span>
-            </div>
-          </div>
-          <div
-            v-for="(row, index) in sidebarRows"
-            :key="row.key"
-            class="gantt-sidebar-row"
-            :style="{
-              height: `${row.height}px`,
-              marginBottom:
-                index === sidebarRows.length - 1 ? '0px' : `${row.nextGap}px`,
-            }"
-            :title="row.label"
-          >
-            <div
-              class="gantt-sidebar-rect"
-            :style="{
-              height: `${row.height}px`,
-              background: row.color,
-              borderTopColor: row.borderColor,
-              borderBottomColor: row.borderColor,
-            }"
-          >
-              <span class="gantt-sidebar-text">{{ row.label }}</span>
-              <div class="gantt-sidebar-totals">
-                <div
-                  v-for="(total, idx) in row.totals"
-                  :key="idx"
-                  class="gantt-sidebar-total"
-                  :style="{ height: `${laneHeight}px` }"
-                >
-                  <span class="gantt-sidebar-total-label">
-                    {{ idx === 0 ? targetLabel : actualLabel }}
-                  </span>
-                  <span class="gantt-sidebar-total-value">{{ total }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            class="gantt-sidebar-total-row"
-          >
-            <span class="gantt-sidebar-total-label">
-              {{ totalLabel }}
-            </span>
-            <div class="gantt-sidebar-totals">
-              <div
-                v-for="(total, idx) in sidebarTotals"
-                :key="idx"
-                class="gantt-sidebar-total"
-              >
-                <span class="gantt-sidebar-total-label">
-                  {{ idx === 0 ? targetLabel : actualLabel }}
-                </span>
-                <span class="gantt-sidebar-total-value">{{ total }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="gantt-sidebar-resizer" @mousedown="onResizeStart"></div>
-    </div>
-    <div
-      ref="timestripScrollRef"
-      class="timestrip-container"
+    <TimestripSidebar
+      ref="sidebarRef"
+      :width="sidebarWidth"
+      :total-height="totalHeight"
+      :sidebar-rows-offset="sidebarRowsOffset"
+      :label-height="LABEL_HEIGHT"
+      :sidebar-lane-bands="sidebarLaneBands"
+      :sidebar-section-bands="sidebarSectionBands"
+      :section-title-font-size="sectionTitleFontSize"
+      :sidebar-rows="sidebarRows"
+      :lane-height="laneHeight"
+      :target-label="targetLabel"
+      :actual-label="actualLabel"
+      :total-label="totalLabel"
+      :sidebar-totals="sidebarTotals"
+      :is-dark="isDark"
+      @scroll="syncScroll('sidebar')"
+      @resize-start="onResizeStart"
+    />
+    <TimestripCanvas
+      ref="timestripRef"
+      :total-width="totalWidth"
+      :track-height="trackHeight"
+      :date-legend-height="dateLegendHeight"
+      :hour-markers="hourMarkers"
+      :day-labels="dayLabels"
+      :day-backgrounds="dayBackgrounds"
+      :legend-stack-height="legendStackHeight"
+      :bar-offset="BAR_OFFSET"
+      :lane-bands="laneBands"
+      :section-bands="sectionBands"
+      :event-bars="eventBars"
+      :lane-height="laneHeight"
+      :row-top-by-key="rowTopByKey"
+      :hour-width="hourWidth"
+      :is-dark="isDark"
       @scroll="syncScroll('timestrip')"
-    >
-      <div
-        class="timestrip"
-        :style="{
-          width: `${totalWidth}px`,
-          height: `${trackHeight}px`,
-          '--day-legend-height': `${dateLegendHeight}px`,
-          '--hour-label-top': `${dateLegendHeight + 4}px`,
-        }"
-      >
-        <div
-          class="section-layer"
-          :style="{ width: `${totalWidth}px`, height: `${trackHeight}px` }"
-        >
-          <div
-            v-for="(lane, index) in laneBands"
-            :key="`lane-${index}`"
-            class="lane-block"
-            :style="{
-              top: `${lane.top}px`,
-              height: `${lane.height}px`,
-              width: `${totalWidth}px`,
-              background: lane.fill,
-              borderTop: `1px solid ${lane.border}`,
-              borderBottom: `1px solid ${lane.border}`,
-            }"
-            :title="lane.title"
-          >
-            <div
-              v-if="lane.split !== undefined"
-              class="lane-split"
-              :style="{
-                top: `${lane.split - lane.top}px`,
-                borderTop: `1px dashed ${lane.border}`,
-              }"
-            ></div>
-          </div>
-          <div
-            v-for="(section, index) in sectionBands"
-            :key="index"
-            class="section-block"
-            :style="{
-              top: `${section.top}px`,
-              height: `${section.height}px`,
-              width: `${totalWidth}px`,
-              background: section.fill,
-              borderTop: `1px solid ${section.border}`,
-              borderBottom: `1px solid ${section.border}`,
-            }"
-            :title="section.title"
-          ></div>
-        </div>
-        <div
-          class="day-backgrounds"
-          :style="{ width: `${totalWidth}px`, height: `${trackHeight}px` }"
-        >
-          <div
-            v-for="(day, index) in dayBackgrounds"
-            :key="index"
-            class="day-background"
-            :class="{ shaded: day.isShaded }"
-            :style="{ left: `${day.left}px`, width: `${day.width}px` }"
-          ></div>
-        </div>
-        <div class="day-labels" :style="{ width: `${totalWidth}px` }">
-          <div
-            v-for="(label, index) in dayLabels"
-            :key="index"
-            class="day-label"
-            :style="{ left: `${label.left}px`, width: `${label.width}px` }"
-          >
-            {{ label.label }}
-          </div>
-        </div>
-        <div
-          v-for="(marker, index) in hourMarkers"
-          :key="index"
-          class="hour-marker"
-          :class="{ 'day-start': marker.isStartOfDay }"
-          :style="{ width: `${marker.spanHours * hourWidth}px` }"
-        >
-          <span class="hour-label">{{ marker.label }}</span>
-        </div>
-        <div class="events-layer" :style="{ height: `${trackHeight}px` }">
-          <div
-            v-for="(bar, index) in eventBars"
-            :key="index"
-            class="event-bar"
-            :style="{
-              left: `${bar.left}px`,
-              width: `${bar.width}px`,
-              top: `${
-                legendStackHeight +
-                BAR_OFFSET +
-                (rowTopByKey.get(bar.groupKey) ?? 0) +
-                bar.sublane * laneHeight
-              }px`,
-              height: `${laneHeight}px`,
-              background: bar.color,
-              borderColor: bar.borderColor,
-              borderRadius: `${barRadius}px`,
-            }"
-            :title="`${bar.title} (${bar.rangeLabel})`"
-          >
-            <span class="event-duration">{{ bar.durationHours }}</span>
-          </div>
-        </div>
-        <div class="events-spacer" :style="{ height: `${trackHeight}px` }"></div>
-      </div>
-    </div>
+    />
   </div>
 </template>
 
@@ -1177,354 +876,5 @@ onBeforeUnmount(() => {
 
 .gantt-root.dark {
   background-color: #27272a;
-}
-
-.gantt-sidebar {
-  position: relative;
-  height: 100%;
-  border-right: 1px solid rgba(148, 163, 184, 0.4);
-  background-color: rgba(226, 232, 240, 0.65);
-  min-width: 140px;
-  max-width: 480px;
-}
-
-.gantt-root.dark .gantt-sidebar {
-  border-right-color: rgba(148, 163, 184, 0.2);
-  background-color: rgba(24, 24, 27, 0.7);
-}
-
-.gantt-sidebar-scroll {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.gantt-sidebar-content {
-  width: 100%;
-  position: relative;
-}
-
-.gantt-sidebar-sections {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.gantt-sidebar-lane-band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  box-sizing: border-box;
-}
-
-.gantt-sidebar-lane-split {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 0;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-.gantt-sidebar-section-band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  box-sizing: border-box;
-  padding: 6px 8px;
-  z-index: 0;
-}
-
-.gantt-sidebar-section-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1f2937;
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.gantt-root.dark .gantt-sidebar-section-label {
-  color: #e2e8f0;
-}
-
-.gantt-sidebar-row {
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  position: relative;
-  z-index: 1;
-}
-
-.gantt-sidebar-rect {
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  box-sizing: border-box;
-  border-top: 1px solid transparent;
-  border-bottom: 1px solid transparent;
-  border-left: 0;
-  border-right: 0;
-  border-radius: 0;
-  width: 100%;
-  justify-content: space-between;
-}
-
-.gantt-sidebar-text {
-  font-size: 12px;
-  color: #1f2937;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.gantt-root.dark .gantt-sidebar-text {
-  color: #e2e8f0;
-}
-
-.gantt-sidebar-totals {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-left: 12px;
-  text-align: left;
-}
-
-.gantt-sidebar-total {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-}
-
-.gantt-sidebar-total-label {
-  font-size: 11px;
-  color: #1f2937;
-  text-transform: capitalize;
-}
-
-.gantt-root.dark .gantt-sidebar-total-label {
-  color: #e2e8f0;
-}
-
-.gantt-sidebar-total-value {
-  font-size: 12px;
-  font-weight: 700;
-  color: #0f172a;
-  margin-left: auto;
-  text-align: right;
-  min-width: 2ch;
-}
-
-.gantt-root.dark .gantt-sidebar-total-value {
-  color: #e2e8f0;
-}
-
-.gantt-sidebar-total-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px 10px;
-  border-top: 1px solid rgba(15, 23, 42, 0.15);
-  position: relative;
-  z-index: 1;
-}
-
-.gantt-root.dark .gantt-sidebar-total-row {
-  border-top-color: rgba(226, 232, 240, 0.2);
-}
-
-.gantt-sidebar-resizer {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-}
-
-.timestrip-container {
-  flex: 1;
-  height: 100%;
-  overflow: auto;
-  background-color: #f8fafc;
-}
-
-.gantt-root.dark .timestrip-container {
-  background-color: #27272a;
-}
-
-.timestrip {
-  display: flex;
-  flex-direction: row;
-  position: relative;
-  height: 100%;
-}
-
-.day-backgrounds {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.day-background {
-  position: absolute;
-  top: 0;
-  height: 100%;
-}
-
-.day-background.shaded {
-  background: rgba(148, 163, 184, 0.08);
-}
-
-.gantt-root.dark .day-background.shaded {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.section-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.lane-block {
-  position: absolute;
-  left: 0;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.lane-split {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 0;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-.section-block {
-  position: absolute;
-  left: 0;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.day-labels {
-  position: absolute;
-  top: 4px;
-  left: 0;
-  height: var(--day-legend-height, 18px);
-  pointer-events: none;
-  z-index: 2;
-}
-
-.day-label {
-  position: absolute;
-  top: 0;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #475569;
-  white-space: nowrap;
-}
-
-.gantt-root.dark .day-label {
-  color: #e2e8f0;
-}
-
-.hour-marker {
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  padding-top: 8px;
-  border-left: 1px dashed #cbd5e1;
-  padding-left: 4px;
-  box-sizing: border-box;
-  height: 100%;
-  position: relative;
-  overflow: visible;
-  z-index: 1;
-}
-
-.dark .hour-marker {
-  border-left-color: #52525b;
-}
-
-.hour-marker.day-start {
-  border-left: 2px solid #94a3b8;
-}
-
-.dark .hour-marker.day-start {
-  border-left-color: #a1a1aa;
-}
-
-.hour-label {
-  font-size: 11px;
-  color: #64748b;
-  white-space: nowrap;
-  font-family: system-ui, -apple-system, sans-serif;
-  position: absolute;
-  top: var(--hour-label-top, 4px);
-  left: 50%;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  display: inline-block;
-  transform: translateX(-50%);
-}
-
-.dark .hour-label {
-  color: #a1a1aa;
-}
-
-
-.events-layer {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.event-bar {
-  position: absolute;
-  background: transparent;
-  border: 1px solid transparent;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
-  padding: 2px 6px;
-  box-sizing: border-box;
-  overflow: hidden;
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dark .event-bar {
-  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
-}
-
-.event-duration {
-  font-size: 11px;
-  font-weight: 600;
-  color: #0f172a;
-  white-space: nowrap;
-}
-
-
-.events-spacer {
-  flex-shrink: 0;
-  width: 1px;
-  opacity: 0;
 }
 </style>
