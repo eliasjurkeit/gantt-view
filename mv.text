@@ -1,28 +1,37 @@
-title: Welcome to Markwhen!
+---
 hours: 08:00-17:00
 skipHours: 12:00-13:00
 skipDates: [2026-01-21, 2026-01-22, 2026-01-23, 2026-01-24]
 targetLabel: Soll-Zeit
 actualLabel: Ist-Zeit
-scale: 10
-laneHeight: 15
-laneGap: 14
-// 0 - 24
-barRadius: 1
-targetBarOpacity: 0.65
 dateLegendHeight: 30
 hourLegendHeight: 80
-// 0-1, default 0.12
-sectionOpacity: 0.3
-// 0-48, default 12
+scale: 10
+laneHeight: 14
+laneGap: 10
+laneBandOpacity: 0.2
+sectionPadding: 25
 sectionGap: 0
-sectionPadding: 30
+sectionBandOpacity: 0.05
+barRadius: 1
 sectionTitleFontSize: 12
-
+---
 
 //TODO:
 //coloring system
-//handlin of sections inside sections
+//milestones
+//day X labels
+//headers
+//optimizing code
+//font
+//font sizes
+//font styles
+//exhaustive example config
+//handling of sections inside sections
+
+//keep coloring of bars+make target bar pattern more noticable/intense
+//keep coloring of bars+apply a pattern to target portion of lane and make a line between the two portions of lanes
+//remove coloring of bars
 
 section Vorbereitungen
 2026-01-19 08:00 / 2026-01-19 15:00:
@@ -39,6 +48,11 @@ for: task1
 id: task2
 2026-01-19 08:00 / 2026-01-19 12:00:
 for: task2
+
+2026-01-19 10:00 / 2026-01-19 10:01:
+id: MeilensteinX
+2026-01-19 10:00 / 2026-01-19 10:01:
+for: MeilensteinX
 endSection
 
 section Initialisierung
