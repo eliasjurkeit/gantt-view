@@ -1,50 +1,50 @@
 <script setup lang="ts">
 import { defineProps } from "vue";
 
-import type { VisibleEventBar } from "./types";
+import type { RenderedEventBar } from "./types";
 
 const props = defineProps<{
-  eventBars: VisibleEventBar[];
-  laneHeight: number;
-  legendStackHeight: number;
-  barOffset: number;
-  rowTopByKey: Record<string, number>;
-  trackHeight: number;
-  isDark: boolean;
+  visibleEventBars: RenderedEventBar[];
+  laneRowHeight: number;
+  headerStackHeight: number;
+  contentVerticalOffset: number;
+  rowTopOffsetByKey: Record<string, number>;
+  timelineHeight: number;
+  isDarkTheme: boolean;
 }>();
 </script>
 
 <template>
-  <div class="events-layer" :style="{ height: `${trackHeight}px` }">
+  <div class="event-bars-layer" :style="{ height: `${timelineHeight}px` }">
     <div
-      v-for="(bar, index) in eventBars"
+      v-for="(bar, index) in visibleEventBars"
       :key="index"
-      class="event-bar"
-      :class="{ dark: isDark }"
+      class="timeline-event-bar"
+      :class="{ dark: isDarkTheme }"
       :style="{
-        left: `${bar.left}px`,
-        width: `${bar.width}px`,
+        left: `${bar.leftOffset}px`,
+        width: `${bar.barWidth}px`,
         top: `${
-          legendStackHeight +
-          barOffset +
-          (rowTopByKey[bar.groupKey] ?? 0) +
-          bar.sublane * laneHeight
+          headerStackHeight +
+          contentVerticalOffset +
+          (rowTopOffsetByKey[bar.groupKey] ?? 0) +
+          bar.sublaneIndex * laneRowHeight
         }px`,
-        height: `${laneHeight}px`,
-        background: bar.color,
+        height: `${laneRowHeight}px`,
+        background: bar.fillColor,
         borderColor: bar.borderColor,
-        borderRadius: `${bar.barRadius}px`,
+        borderRadius: `${bar.cornerRadius}px`,
       }"
-      :title="`${bar.title} (${bar.rangeLabel})`"
+      :title="`${bar.label} (${bar.timeRangeLabel})`"
     >
-      <span class="event-duration">{{ bar.durationHours }}</span>
+      <span class="event-duration-label">{{ bar.durationHoursLabel }}</span>
     </div>
-    <div class="events-spacer" :style="{ height: `${trackHeight}px` }"></div>
+    <div class="event-layer-spacer" :style="{ height: `${timelineHeight}px` }"></div>
   </div>
 </template>
 
 <style scoped>
-.events-layer {
+.event-bars-layer {
   position: absolute;
   left: 0;
   top: 0;
@@ -53,7 +53,7 @@ const props = defineProps<{
   z-index: 3;
 }
 
-.event-bar {
+.timeline-event-bar {
   position: absolute;
   background: transparent;
   border: 1px solid transparent;
@@ -67,22 +67,22 @@ const props = defineProps<{
   justify-content: center;
 }
 
-.event-bar.dark {
+.timeline-event-bar.dark {
   box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
 }
 
-.event-duration {
+.event-duration-label {
   font-size: 11px;
   font-weight: 600;
   color: #0f172a;
   white-space: nowrap;
 }
 
-.event-bar.dark .event-duration {
+.timeline-event-bar.dark .event-duration-label {
   color: #e2e8f0;
 }
 
-.events-spacer {
+.event-layer-spacer {
   flex-shrink: 0;
   width: 1px;
   opacity: 0;

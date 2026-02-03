@@ -1,83 +1,87 @@
 <script setup lang="ts">
 import { computed, defineProps } from "vue";
 
-import type { SectionBand } from "./types";
+import type { BandRegion } from "./types";
 
 const props = defineProps<{
-  laneBands: SectionBand[];
-  sectionBands: SectionBand[];
-  containerStyle?: Record<string, string | number>;
-  showSectionLabels?: boolean;
-  sectionTitleFontSize?: number;
-  isDark?: boolean;
+  laneRegions: BandRegion[];
+  sectionRegions: BandRegion[];
+  containerStyleOverrides?: Record<string, string | number>;
+  showSectionTitles?: boolean;
+  sectionTitleSize?: number;
+  isDarkTheme?: boolean;
 }>();
 
-const rootStyle = computed(() => props.containerStyle ?? {});
+const bandLayerStyle = computed(() => props.containerStyleOverrides ?? {});
 </script>
 
 <template>
-  <div class="bands-layer" :class="{ dark: isDark }" :style="rootStyle">
+  <div
+    class="band-overlays-layer"
+    :class="{ dark: isDarkTheme }"
+    :style="bandLayerStyle"
+  >
     <div
-      v-for="(lane, index) in laneBands"
+      v-for="(laneRegion, index) in laneRegions"
       :key="`lane-${index}`"
-      class="band-lane"
+      class="lane-region"
       :style="{
-        top: `${lane.top}px`,
-        height: `${lane.height}px`,
-        background: lane.fill,
-        borderTop: `1px solid ${lane.border}`,
-        borderBottom: `1px solid ${lane.border}`,
+        top: `${laneRegion.topOffset}px`,
+        height: `${laneRegion.height}px`,
+        background: laneRegion.backgroundColor,
+        borderTop: `1px solid ${laneRegion.borderColor}`,
+        borderBottom: `1px solid ${laneRegion.borderColor}`,
       }"
-      :title="lane.title"
+      :title="laneRegion.label"
     >
       <div
-        v-if="lane.split !== undefined"
-        class="band-lane-split"
+        v-if="laneRegion.splitOffset !== undefined"
+        class="lane-region-split"
         :style="{
-          top: `${lane.split - lane.top}px`,
-          borderTop: `1px dashed ${lane.border}`,
+          top: `${laneRegion.splitOffset - laneRegion.topOffset}px`,
+          borderTop: `1px dashed ${laneRegion.borderColor}`,
         }"
       ></div>
     </div>
     <div
-      v-for="(section, index) in sectionBands"
+      v-for="(sectionRegion, index) in sectionRegions"
       :key="index"
-      class="band-section"
+      class="section-region"
       :style="{
-        top: `${section.top}px`,
-        height: `${section.height}px`,
-        background: section.fill,
-        borderTop: `1px solid ${section.border}`,
-        borderBottom: `1px solid ${section.border}`,
+        top: `${sectionRegion.topOffset}px`,
+        height: `${sectionRegion.height}px`,
+        background: sectionRegion.backgroundColor,
+        borderTop: `1px solid ${sectionRegion.borderColor}`,
+        borderBottom: `1px solid ${sectionRegion.borderColor}`,
       }"
-      :title="section.title"
+      :title="sectionRegion.label"
     >
       <span
-        v-if="showSectionLabels"
-        class="band-section-label"
-        :style="{ fontSize: `${sectionTitleFontSize ?? 12}px` }"
+        v-if="showSectionTitles"
+        class="section-region-label"
+        :style="{ fontSize: `${sectionTitleSize ?? 12}px` }"
       >
-        {{ section.title }}
+        {{ sectionRegion.label }}
       </span>
     </div>
   </div>
 </template>
 
 <style scoped>
-.bands-layer {
+.band-overlays-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.band-lane {
+.lane-region {
   position: absolute;
   left: 0;
   right: 0;
   box-sizing: border-box;
 }
 
-.band-lane-split {
+.lane-region-split {
   position: absolute;
   left: 0;
   right: 0;
@@ -86,7 +90,7 @@ const rootStyle = computed(() => props.containerStyle ?? {});
   pointer-events: none;
 }
 
-.band-section {
+.section-region {
   position: absolute;
   left: 0;
   right: 0;
@@ -95,7 +99,7 @@ const rootStyle = computed(() => props.containerStyle ?? {});
   z-index: 0;
 }
 
-.band-section-label {
+.section-region-label {
   font-size: 12px;
   font-weight: 700;
   color: #1f2937;
@@ -106,7 +110,7 @@ const rootStyle = computed(() => props.containerStyle ?? {});
   pointer-events: none;
 }
 
-.bands-layer.dark .band-section-label {
+.band-overlays-layer.dark .section-region-label {
   color: #e2e8f0;
 }
 </style>

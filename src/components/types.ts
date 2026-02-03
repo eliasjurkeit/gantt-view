@@ -13,27 +13,27 @@ export interface DayLabel {
   width: number;
 }
 
-export interface SectionBand {
-  title: string;
-  top: number;
+export interface BandRegion {
+  label: string;
+  topOffset: number;
   height: number;
-  fill: string;
-  border: string;
-  split?: number;
+  backgroundColor: string;
+  borderColor: string;
+  splitOffset?: number;
 }
 
-export interface VisibleEventBar {
-  title: string;
-  left: number;
-  width: number;
-  lane: number;
-  rangeLabel: string;
-  color: string;
+export interface RenderedEventBar {
+  label: string;
+  leftOffset: number;
+  barWidth: number;
+  laneIndex: number;
+  timeRangeLabel: string;
+  fillColor: string;
   borderColor: string;
-  durationHours: string;
+  durationHoursLabel: string;
   groupKey: string;
-  sublane: number;
-  isIdEvent: boolean;
+  sublaneIndex: number;
+  isTargetEvent: boolean;
   sectionName?: string;
-  barRadius: number;
+  cornerRadius: number;
 }

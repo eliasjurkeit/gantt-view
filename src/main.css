@@ -2,14 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-:root, body, #app {
+:root {
+  --app-font-family: Avenir, Helvetica, Arial, sans-serif;
+}
+
+:root,
+body,
+#app {
   width: 100%;
   height: 100%;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--app-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   mix-blend-mode: multiply;

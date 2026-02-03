@@ -2,16 +2,16 @@
 import { computed, defineProps, defineEmits, defineExpose, ref } from "vue";
 
 import Band from "./Band.vue";
-import type { SectionBand } from "./types";
+import type { BandRegion } from "./types";
 
 const props = defineProps<{
-  width: number;
-  totalHeight: number;
-  sidebarRowsOffset: number;
-  labelHeight: number;
-  sidebarLaneBands: SectionBand[];
-  sidebarSectionBands: SectionBand[];
-  sectionTitleFontSize: number;
+  sidebarWidth: number;
+  timelineHeight: number;
+  rowAreaOffset: number;
+  labelAreaHeight: number;
+  laneRegions: BandRegion[];
+  sectionRegions: BandRegion[];
+  sectionTitleSize: number;
   sidebarRows: Array<{
     key: string;
     label: string;
@@ -21,12 +21,12 @@ const props = defineProps<{
     borderColor: string;
     totals: string[];
   }>;
-  laneHeight: number;
+  laneRowHeight: number;
   targetLabel: string;
   actualLabel: string;
   totalLabel: string;
   sidebarTotals: string[];
-  isDark: boolean;
+  isDarkTheme: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -34,43 +34,43 @@ const emit = defineEmits<{
   resizeStart: [event: MouseEvent];
 }>();
 
-const scrollRef = ref<HTMLDivElement | null>(null);
+const sidebarScrollRef = ref<HTMLDivElement | null>(null);
 
 const sidebarStyle = computed(() => ({
-  width: `${props.width}px`,
+  width: `${props.sidebarWidth}px`,
 }));
 
 const contentStyle = computed(() => ({
-  height: `${props.totalHeight}px`,
-  paddingTop: `${props.sidebarRowsOffset + props.labelHeight}px`,
+  height: `${props.timelineHeight}px`,
+  paddingTop: `${props.rowAreaOffset + props.labelAreaHeight}px`,
 }));
 const bandsStyle = computed(() => ({
-  height: `${props.totalHeight}px`,
+  height: `${props.timelineHeight}px`,
 }));
 
 const onScroll = () => emit("scroll");
 
 defineExpose({
-  getScrollTop: () => scrollRef.value?.scrollTop ?? 0,
+  getScrollTop: () => sidebarScrollRef.value?.scrollTop ?? 0,
   setScrollTop: (value: number) => {
-    if (scrollRef.value) {
-      scrollRef.value.scrollTop = value;
+    if (sidebarScrollRef.value) {
+      sidebarScrollRef.value.scrollTop = value;
     }
   },
 });
 </script>
 
 <template>
-  <div class="gantt-sidebar" :class="{ dark: isDark }" :style="sidebarStyle">
-    <div ref="scrollRef" class="gantt-sidebar-scroll" @scroll="onScroll">
+  <div class="gantt-sidebar" :class="{ dark: isDarkTheme }" :style="sidebarStyle">
+    <div ref="sidebarScrollRef" class="gantt-sidebar-scroll" @scroll="onScroll">
       <div class="gantt-sidebar-content" :style="contentStyle">
         <Band
-          :lane-bands="sidebarLaneBands"
-          :section-bands="sidebarSectionBands"
-          :container-style="bandsStyle"
-          :show-section-labels="true"
-          :section-title-font-size="sectionTitleFontSize"
-          :is-dark="isDark"
+          :lane-regions="laneRegions"
+          :section-regions="sectionRegions"
+          :container-style-overrides="bandsStyle"
+          :show-section-titles="true"
+          :section-title-size="sectionTitleSize"
+          :is-dark-theme="isDarkTheme"
         />
         <div
           v-for="(row, index) in sidebarRows"
@@ -97,7 +97,7 @@ defineExpose({
                 v-for="(total, idx) in row.totals"
                 :key="idx"
                 class="gantt-sidebar-total"
-                :style="{ height: `${laneHeight}px` }"
+                :style="{ height: `${laneRowHeight}px` }"
               >
                 <span class="gantt-sidebar-total-label">
                   {{ idx === 0 ? targetLabel : actualLabel }}

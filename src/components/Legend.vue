@@ -5,34 +5,34 @@ import type { DayLabel, HourMarker } from "./types";
 
 const props = defineProps<{
   dayLabels: DayLabel[];
-  dayBackgrounds: Array<DayLabel & { isShaded: boolean }>;
+  dayBackgroundRows: Array<DayLabel & { isShaded: boolean }>;
   hourMarkers: HourMarker[];
-  totalWidth: number;
-  trackHeight: number;
+  timelineWidth: number;
+  timelineHeight: number;
   hourWidth: number;
-  isDark: boolean;
+  isDarkTheme: boolean;
 }>();
 </script>
 
 <template>
   <div
-    class="day-backgrounds"
-    :style="{ width: `${totalWidth}px`, height: `${trackHeight}px` }"
+    class="day-background-layer"
+    :style="{ width: `${timelineWidth}px`, height: `${timelineHeight}px` }"
   >
     <div
-      v-for="(day, index) in dayBackgrounds"
+      v-for="(day, index) in dayBackgroundRows"
       :key="index"
-      class="day-background"
-      :class="{ shaded: day.isShaded, dark: isDark }"
+      class="day-background-slot"
+      :class="{ shaded: day.isShaded, dark: isDarkTheme }"
       :style="{ left: `${day.left}px`, width: `${day.width}px` }"
     ></div>
   </div>
-  <div class="day-labels" :style="{ width: `${totalWidth}px` }">
+  <div class="day-labels" :style="{ width: `${timelineWidth}px` }">
     <div
       v-for="(label, index) in dayLabels"
       :key="index"
       class="day-label"
-      :class="{ dark: isDark }"
+      :class="{ dark: isDarkTheme }"
       :style="{ left: `${label.left}px`, width: `${label.width}px` }"
     >
       {{ label.label }}
@@ -42,7 +42,7 @@ const props = defineProps<{
     v-for="(marker, index) in hourMarkers"
     :key="index"
     class="hour-marker"
-    :class="{ 'day-start': marker.isStartOfDay, dark: isDark }"
+    :class="{ 'day-start': marker.isStartOfDay, dark: isDarkTheme }"
     :style="{ width: `${marker.spanHours * hourWidth}px` }"
   >
     <span class="hour-label">{{ marker.label }}</span>
@@ -50,7 +50,7 @@ const props = defineProps<{
 </template>
 
 <style scoped>
-.day-backgrounds {
+.day-background-layer {
   position: absolute;
   top: 0;
   left: 0;
@@ -59,17 +59,17 @@ const props = defineProps<{
   z-index: 0;
 }
 
-.day-background {
+.day-background-slot {
   position: absolute;
   top: 0;
   height: 100%;
 }
 
-.day-background.shaded {
+.day-background-slot.shaded {
   background: rgba(148, 163, 184, 0.08);
 }
 
-.day-background.dark.shaded {
+.day-background-slot.dark.shaded {
   background: rgba(255, 255, 255, 0.04);
 }
 

@@ -4,100 +4,101 @@ import { computed, defineEmits, defineExpose, defineProps, ref } from "vue";
 import Band from "./Band.vue";
 import Bar from "./Bar.vue";
 import Legend from "./Legend.vue";
-import type { DayLabel, HourMarker, SectionBand, VisibleEventBar } from "./types";
+import type { BandRegion, DayLabel, HourMarker, RenderedEventBar } from "./types";
 
 const props = defineProps<{
-  totalWidth: number;
-  trackHeight: number;
-  dateLegendHeight: number;
+  timelineWidth: number;
+  timelineHeight: number;
+  dayLegendHeight: number;
   hourMarkers: HourMarker[];
   dayLabels: DayLabel[];
-  dayBackgrounds: Array<DayLabel & { isShaded: boolean }>;
-  legendStackHeight: number;
-  barOffset: number;
-  laneBands: SectionBand[];
-  sectionBands: SectionBand[];
-  eventBars: VisibleEventBar[];
-  laneHeight: number;
-  rowTopByKey: Record<string, number>;
+  dayBackgroundRows: Array<DayLabel & { isShaded: boolean }>;
+  headerStackHeight: number;
+  contentVerticalOffset: number;
+  laneRegions: BandRegion[];
+  sectionRegions: BandRegion[];
+  visibleEventBars: RenderedEventBar[];
+  laneRowHeight: number;
+  rowTopOffsetByKey: Record<string, number>;
   hourWidth: number;
-  isDark: boolean;
+  isDarkTheme: boolean;
 }>();
 
 const emit = defineEmits<{
   scroll: [];
 }>();
 
-const scrollRef = ref<HTMLDivElement | null>(null);
+const scrollContainerRef = ref<HTMLDivElement | null>(null);
 
-const timestripStyle = computed(() => ({
-  width: `${props.totalWidth}px`,
-  height: `${props.trackHeight}px`,
-  "--day-legend-height": `${props.dateLegendHeight}px`,
-  "--hour-label-top": `${props.dateLegendHeight + 4}px`,
+const timelineSizing = computed(() => ({
+  width: `${props.timelineWidth}px`,
+  height: `${props.timelineHeight}px`,
+  "--day-legend-height": `${props.dayLegendHeight}px`,
+  "--hour-label-top": `${props.dayLegendHeight + 4}px`,
 }));
 
 const onScroll = () => emit("scroll");
 
 defineExpose({
-  getScrollTop: () => scrollRef.value?.scrollTop ?? 0,
+  getScrollTop: () => scrollContainerRef.value?.scrollTop ?? 0,
   setScrollTop: (value: number) => {
-    if (scrollRef.value) {
-      scrollRef.value.scrollTop = value;
+    if (scrollContainerRef.value) {
+      scrollContainerRef.value.scrollTop = value;
     }
   },
-  getClientHeight: () => scrollRef.value?.clientHeight ?? 0,
+  getClientHeight: () => scrollContainerRef.value?.clientHeight ?? 0,
 });
 </script>
 
 <template>
   <div
-    ref="scrollRef"
-    class="timestrip-container"
-    :class="{ dark: isDark }"
+    ref="scrollContainerRef"
+    class="timeline-scroll-container"
+    :class="{ dark: isDarkTheme }"
     @scroll="onScroll"
   >
-    <div class="timestrip" :style="timestripStyle">
+    <div class="timeline-stage" :style="timelineSizing">
       <Band
-        :lane-bands="laneBands"
-        :section-bands="sectionBands"
-        :container-style="{ width: `${totalWidth}px`, height: `${trackHeight}px`, zIndex: 1 }"
+        :lane-regions="laneRegions"
+        :section-regions="sectionRegions"
+        :container-style-overrides="{ width: `${timelineWidth}px`, height: `${timelineHeight}px`, zIndex: 1 }"
+        :is-dark-theme="isDarkTheme"
       />
       <Legend
         :day-labels="dayLabels"
-        :day-backgrounds="dayBackgrounds"
+        :day-background-rows="dayBackgroundRows"
         :hour-markers="hourMarkers"
-        :total-width="totalWidth"
-        :track-height="trackHeight"
+        :timeline-width="timelineWidth"
+        :timeline-height="timelineHeight"
         :hour-width="hourWidth"
-        :is-dark="isDark"
+        :is-dark-theme="isDarkTheme"
       />
       <Bar
-        :event-bars="eventBars"
-        :lane-height="laneHeight"
-        :legend-stack-height="legendStackHeight"
-        :bar-offset="barOffset"
-        :row-top-by-key="rowTopByKey"
-        :track-height="trackHeight"
-        :is-dark="isDark"
+        :visible-event-bars="visibleEventBars"
+        :lane-row-height="laneRowHeight"
+        :header-stack-height="headerStackHeight"
+        :content-vertical-offset="contentVerticalOffset"
+        :row-top-offset-by-key="rowTopOffsetByKey"
+        :timeline-height="timelineHeight"
+        :is-dark-theme="isDarkTheme"
       />
     </div>
   </div>
 </template>
 
 <style scoped>
-.timestrip-container {
+.timeline-scroll-container {
   flex: 1;
   height: 100%;
   overflow: auto;
   background-color: #f8fafc;
 }
 
-.timestrip-container.dark {
+.timeline-scroll-container.dark {
   background-color: #27272a;
 }
 
-.timestrip {
+.timeline-stage {
   display: flex;
   flex-direction: row;
   position: relative;
