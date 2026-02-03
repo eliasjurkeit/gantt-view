@@ -39,6 +39,8 @@ const PASTEL_PALETTE = [
   "#E2F0CB",
   "#FDE2E4",
 ];
+const TARGET_BAR_COLOR = "#A5D8FF";
+const ACTUAL_BAR_COLOR = "#CDEAC0";
 
 interface HourMarker {
   hour: number;
@@ -749,50 +751,13 @@ const eventBars = computed((): EventBar[] => {
     groupInfo.set(groupKey, info);
   });
 
-  const laneColors = new Map<
-    number,
-    { color: string; borderColor: string }
-  >();
-
-  const sectionKeys = Array.from(lanesBySection.keys()).sort();
-  sectionKeys.forEach((sectionKey, sectionIdx) => {
-    const lanes = Array.from(lanesBySection.get(sectionKey) ?? []).sort(
-      (a, b) => a - b
-    );
-    const orderIndex = sectionOrder.indexOf(sectionKey);
-    const paletteIndex =
-      orderIndex >= 0 ? orderIndex : sectionIdx;
-    const base =
-      sectionColors.get(sectionKey)?.base ??
-      PASTEL_PALETTE[paletteIndex % PASTEL_PALETTE.length] ??
-      "#A5D8FF";
-
-    const color = base;
-    const borderColor = darkenHex(base, 32);
-    lanes.forEach((laneIdx) => {
-      laneColors.set(laneIdx, { color, borderColor });
-    });
-  });
-
   return bars.map(({ startTime, endTime, lane, ...rest }) => {
-    const laneColor =
-      laneColors.get(lane) ??
-      laneColors.values().next().value ??
-      {
-        color:
-          PASTEL_PALETTE[Math.abs(hashString(rest.groupKey)) % PASTEL_PALETTE.length] ??
-          "#A5D8FF",
-        borderColor: darkenHex(
-          PASTEL_PALETTE[Math.abs(hashString(rest.groupKey)) % PASTEL_PALETTE.length] ??
-            "#A5D8FF",
-          32
-        ),
-      };
+    const baseColor = rest.isIdEvent ? TARGET_BAR_COLOR : ACTUAL_BAR_COLOR;
     return {
       ...rest,
       lane,
-      color: laneColor.color,
-      borderColor: laneColor.borderColor,
+      color: baseColor,
+      borderColor: darkenHex(baseColor, 24),
     };
   });
 });
@@ -812,11 +777,23 @@ const rowLayouts = computed(() => {
   >();
 
   for (const bar of eventBars.value) {
+    const laneColor = (() => {
+      if (bar.sectionName) {
+        const base = sectionsInfo.value.sectionColors.get(bar.sectionName)?.base;
+        if (base) return base;
+      }
+      const paletteIndex =
+        PASTEL_PALETTE.length === 0
+          ? 0
+          : Math.abs(hashString(bar.groupKey)) % PASTEL_PALETTE.length;
+      return PASTEL_PALETTE[paletteIndex] ?? "#A5D8FF";
+    })();
+    const laneBorder = darkenHex(laneColor, 24);
     const entry = rowsMap.get(bar.groupKey) ?? {
       lane: bar.lane,
       sublaneCount: 0,
-      color: bar.color,
-      borderColor: bar.borderColor,
+      color: laneColor,
+      borderColor: laneBorder,
       totals: [],
       sectionName: undefined,
       sectionHits: {},
