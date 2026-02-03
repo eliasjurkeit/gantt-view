@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { DateTime } from "luxon";
 import { iter, isEvent, toDateRange } from "@markwhen/parser";
 import { useMarkwhenStore } from "./markwhenStore";
-import Timestream from "./components/Timestream.vue";
+import TimestreamContent from "./components/TimestreamContent.vue";
+import TimestreamLegend from "./components/TimestreamLegend.vue";
 import Sidebar from "./components/Sidebar.vue";
 import type {
   BandRegion,
@@ -802,10 +803,17 @@ const timelineContentHeight = computed(
   () => headerStackHeight.value + BAR_VERTICAL_OFFSET + laneLayouts.value.contentHeight + 12
 );
 
+const timelineSizing = computed(() => ({
+  width: `${timelineWidth.value}px`,
+  height: `${timelineHeight.value}px`,
+  "--day-legend-height": `${dayLegendHeight.value}px`,
+  "--hour-label-top": `${dayLegendHeight.value + 4}px`,
+}));
+
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
-const timelineRef = ref<InstanceType<typeof Timestream> | null>(null);
+const timelineScrollRef = ref<HTMLDivElement | null>(null);
 const isSyncingScroll = ref(false);
 const viewportHeight = ref(0);
 const timelineHeight = computed(() => Math.max(timelineContentHeight.value, viewportHeight.value));
@@ -814,12 +822,12 @@ const syncScroll = (source: "sidebar" | "timeline") => {
   if (isSyncingScroll.value) return;
   isSyncingScroll.value = true;
   const sidebar = sidebarRef.value;
-  const timeline = timelineRef.value;
+  const timeline = timelineScrollRef.value;
   if (sidebar && timeline) {
     if (source === "sidebar") {
-      timeline.setScrollTop(sidebar.getScrollTop());
+      timeline.scrollTop = sidebar.getScrollTop();
     } else {
-      sidebar.setScrollTop(timeline.getScrollTop());
+      sidebar.setScrollTop(timeline.scrollTop ?? 0);
     }
   }
   requestAnimationFrame(() => {
@@ -828,7 +836,7 @@ const syncScroll = (source: "sidebar" | "timeline") => {
 };
 
 const updateViewportHeight = () => {
-  viewportHeight.value = timelineRef.value?.getClientHeight() ?? 0;
+  viewportHeight.value = timelineScrollRef.value?.clientHeight ?? 0;
 };
 
 onMounted(() => {
@@ -863,25 +871,36 @@ onBeforeUnmount(() => {
         @scroll="syncScroll('sidebar')"
         @resize-start="onResizeStart"
       />
-      <Timestream
-        ref="timelineRef"
-        :timeline-width="timelineWidth"
-        :timeline-height="timelineHeight"
-        :day-legend-height="dayLegendHeight"
-        :hour-markers="hourMarkers"
-        :day-labels="dayLabels"
-        :day-backgrounds="dayBackgroundRows"
-        :header-stack-height="headerStackHeight"
-        :content-vertical-offset="BAR_VERTICAL_OFFSET"
-        :lane-regions="laneRegions"
-        :section-regions="sectionRegions"
-        :visible-event-bars="renderedEventBars"
-        :lane-row-height="laneRowHeight"
-        :lane-top-offset-by-key="laneTopOffsetByKey"
-        :hour-width="hourWidth"
-        :is-dark-theme="isDark"
+      <div
+        ref="timelineScrollRef"
+        class="timeline-scroll-container"
+        :class="{ dark: isDark }"
         @scroll="syncScroll('timeline')"
-      />
+      >
+        <div class="timeline-stage" :style="timelineSizing">
+          <TimestreamLegend
+            :day-labels="dayLabels"
+            :day-background-rows="dayBackgroundRows"
+            :hour-markers="hourMarkers"
+            :timeline-width="timelineWidth"
+            :timeline-height="timelineHeight"
+            :hour-width="hourWidth"
+            :is-dark-theme="isDark"
+          />
+          <TimestreamContent
+            :timeline-width="timelineWidth"
+            :timeline-height="timelineHeight"
+            :header-stack-height="headerStackHeight"
+            :content-vertical-offset="BAR_VERTICAL_OFFSET"
+            :lane-regions="laneRegions"
+            :section-regions="sectionRegions"
+            :visible-event-bars="renderedEventBars"
+            :lane-row-height="laneRowHeight"
+            :lane-top-offset-by-key="laneTopOffsetByKey"
+            :is-dark-theme="isDark"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -909,5 +928,23 @@ onBeforeUnmount(() => {
 
 .gantt-root.dark {
   background-color: #27272a;
+}
+
+.timeline-scroll-container {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+  background-color: #f8fafc;
+}
+
+.timeline-scroll-container.dark {
+  background-color: #27272a;
+}
+
+.timeline-stage {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  height: 100%;
 }
 </style>

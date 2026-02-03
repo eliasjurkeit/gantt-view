@@ -27,7 +27,7 @@ Markwhen host  ──postMessage──>  useLpc  ──>  markwhenStore (Pinia) 
 
 - `src/markwhenStore.ts` — Single Pinia store. Owns all host communication via `useLpc` from `@markwhen/view-client`. Exposes `app` (theme/UI state) and `markwhen` (parsed events). All new host requests should go through `postRequest` here; don't bypass the store.
 - `src/App.vue` — The Gantt visualization. All layout math, time calculations, lane/overlap detection, scroll sync, and rendering live here. Key computed properties: `timeRange`, `hourMarkers`, `eventBars`, `rowLayouts`, `sectionBands`.
-- `src/components/Timestream.vue` / `src/components/Sidebar.vue` — Presentational pieces for the timeline and sidebar; App wires the data into them.
+- `src/components/TimestreamContent.vue` / `src/components/Sidebar.vue` — Presentational pieces for the timeline and sidebar; App wires the data into them.
 
 ### Header options (driven by the `.mw` file header)
 
