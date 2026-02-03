@@ -381,7 +381,7 @@ const hexToRgb = (hex: string) => {
   return { r, g, b };
 };
 
-const getDailySegments = (day: DateTime) => {
+const getDailySegments = () => {
   const base = dailyHourRange.value ?? { startMinutes: 0, endMinutes: 24 * 60 };
   const skip = skipHourRange.value;
   if (!skip) return [base];
@@ -414,7 +414,7 @@ const visibleMinutesBetween = (start: DateTime, end: DateTime) => {
       continue;
     }
 
-    const segments = getDailySegments(day);
+    const segments = getDailySegments();
     for (const segment of segments) {
       const dayStart = day.plus({ minutes: segment.startMinutes });
       const dayEnd = day.plus({ minutes: segment.endMinutes });
@@ -446,7 +446,7 @@ const hourMarkers = computed((): HourMarker[] => {
       day = day.plus({ days: 1 });
       continue;
     }
-    const segments = getDailySegments(day);
+    const segments = getDailySegments();
     if (segments.length === 0) {
       day = day.plus({ days: 1 });
       continue;
@@ -549,7 +549,6 @@ const sectionsInfo = computed(() => {
     return {
       eventSection: new Map<string, string>(),
       sectionColors: new Map<string, { fill: string; border: string; base: string }>(),
-      sectionOrder: [] as string[],
     };
   }
 
@@ -598,7 +597,7 @@ const sectionsInfo = computed(() => {
 
   walk(transformed, []);
 
-  return { eventSection, sectionColors, sectionOrder };
+  return { eventSection, sectionColors };
 });
 
 const eventBars = computed((): EventBar[] => {
@@ -609,8 +608,6 @@ const eventBars = computed((): EventBar[] => {
 
   const { start } = timeRange.value;
   const eventSection = sectionsInfo.value.eventSection;
-  const sectionColors = sectionsInfo.value.sectionColors;
-  const sectionOrder = sectionsInfo.value.sectionOrder;
   const bars: Array<
     EventBar & { startTime: DateTime; endTime: DateTime }
   > = [];
@@ -651,11 +648,7 @@ const eventBars = computed((): EventBar[] => {
         : `${startTime.toFormat("MMM d HH:mm")}–${endTime.toFormat(
             "MMM d HH:mm"
           )}`;
-    const colorIndex =
-      PASTEL_PALETTE.length === 0
-        ? 0
-        : hashString(groupKey) % PASTEL_PALETTE.length;
-    const color = PASTEL_PALETTE[colorIndex] ?? "#A5D8FF";
+    const color = hasId ? TARGET_BAR_COLOR : ACTUAL_BAR_COLOR;
     const borderColor = darkenHex(color, 24);
 
     bars.push({
@@ -684,7 +677,6 @@ const eventBars = computed((): EventBar[] => {
         EventBar & { startTime: DateTime; endTime: DateTime }
       >;
       earliest: DateTime;
-      sublaneCount: number;
     }
   >();
 
@@ -692,7 +684,6 @@ const eventBars = computed((): EventBar[] => {
     const entry = groupInfo.get(bar.groupKey) ?? {
       bars: [],
       earliest: bar.startTime,
-      sublaneCount: 0,
     };
     entry.bars.push(bar);
     if (+bar.startTime < +entry.earliest) entry.earliest = bar.startTime;
@@ -702,8 +693,6 @@ const eventBars = computed((): EventBar[] => {
   const groupOrder = Array.from(groupInfo.entries()).sort(
     (a, b) => +a[1].earliest - +b[1].earliest
   );
-
-  const lanesBySection = new Map<string, Set<number>>();
 
   groupOrder.forEach(([groupKey, info], groupIndex) => {
     const groupBars = info.bars.sort(
@@ -741,26 +730,12 @@ const eventBars = computed((): EventBar[] => {
       bar.sublane += idSublaneCount;
     });
 
-    info.sublaneCount = idSublaneCount + nonIdSublaneEnds.length;
     for (const bar of groupBars) {
       bar.lane = groupIndex;
-      const key = bar.sectionName ?? `__orphan_lane_${groupIndex}`;
-      const set = lanesBySection.get(key) ?? new Set<number>();
-      set.add(groupIndex);
-      lanesBySection.set(key, set);
     }
-    groupInfo.set(groupKey, info);
   });
 
-  return bars.map(({ startTime, endTime, lane, ...rest }) => {
-    const baseColor = rest.isIdEvent ? TARGET_BAR_COLOR : ACTUAL_BAR_COLOR;
-    return {
-      ...rest,
-      lane,
-      color: baseColor,
-      borderColor: darkenHex(baseColor, 24),
-    };
-  });
+  return bars.map(({ startTime, endTime, ...rest }) => rest);
 });
 
 const rowLayouts = computed(() => {
@@ -867,7 +842,7 @@ const rowLayouts = computed(() => {
 
   const contentHeight = offset + tailGap;
 
-  return { rows: layout, contentHeight, totals: rows, tailGap };
+  return { rows: layout, contentHeight };
 });
 
 const sidebarRows = computed(() => rowLayouts.value.rows);
@@ -969,8 +944,6 @@ const laneBands = computed<SectionBand[]>(() => {
   });
   return bands;
 });
-
-const totalRowTopOffset = computed(() => 0);
 
 const sidebarSectionBands = computed<SectionBand[]>(() => {
   const bands = new Map<
@@ -1223,7 +1196,6 @@ onBeforeUnmount(() => {
           </div>
           <div
             class="gantt-sidebar-total-row"
-            :style="{ marginTop: `${totalRowTopOffset}px` }"
           >
             <span class="gantt-sidebar-total-label">
               {{ totalLabel }}
@@ -1447,39 +1419,6 @@ onBeforeUnmount(() => {
 
 .gantt-root.dark .gantt-sidebar-section-label {
   color: #e2e8f0;
-}
-
-.gantt-sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #334155;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-  background: rgba(241, 245, 249, 0.9);
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
-
-.gantt-root.dark .gantt-sidebar-header {
-  color: #e2e8f0;
-  background: rgba(39, 39, 42, 0.95);
-  border-bottom-color: rgba(148, 163, 184, 0.2);
-}
-
-.gantt-sidebar-smallprint {
-  font-size: 10px;
-  font-weight: 500;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.gantt-root.dark .gantt-sidebar-smallprint {
-  color: #94a3b8;
 }
 
 .gantt-sidebar-row {
