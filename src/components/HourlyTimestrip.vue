@@ -3,8 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { DateTime } from "luxon";
 import { iter, isEvent, toDateRange } from "@markwhen/parser";
 import { useMarkwhenStore } from "../Markwhen/markwhenStore";
-import TimestripCanvas from "./TimestripCanvas.vue";
-import TimestripSidebar from "./TimestripSidebar.vue";
+import Canvas from "./Canvas.vue";
+import Sidebar from "./Sidebar.vue";
 import type {
   DayLabel,
   HourMarker,
@@ -786,8 +786,8 @@ const totalHeight = computed(
 
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 
-const sidebarRef = ref<InstanceType<typeof TimestripSidebar> | null>(null);
-const timestripRef = ref<InstanceType<typeof TimestripCanvas> | null>(null);
+const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
+const timestripRef = ref<InstanceType<typeof Canvas> | null>(null);
 const isSyncingScroll = ref(false);
 const viewportHeight = ref(0);
 const trackHeight = computed(() => Math.max(totalHeight.value, viewportHeight.value));
@@ -825,7 +825,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="gantt-root" :class="{ dark: isDark }">
-    <TimestripSidebar
+    <Sidebar
       ref="sidebarRef"
       :width="sidebarWidth"
       :total-height="totalHeight"
@@ -844,7 +844,7 @@ onBeforeUnmount(() => {
       @scroll="syncScroll('sidebar')"
       @resize-start="onResizeStart"
     />
-    <TimestripCanvas
+    <Canvas
       ref="timestripRef"
       :total-width="totalWidth"
       :track-height="trackHeight"

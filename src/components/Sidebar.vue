@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, defineProps, defineEmits, defineExpose, ref } from "vue";
 
-import BandsLayer from "./BandsLayer.vue";
+import Band from "./Band.vue";
 import type { SectionBand } from "./types";
 
 const props = defineProps<{
@@ -64,7 +64,7 @@ defineExpose({
   <div class="gantt-sidebar" :class="{ dark: isDark }" :style="sidebarStyle">
     <div ref="scrollRef" class="gantt-sidebar-scroll" @scroll="onScroll">
       <div class="gantt-sidebar-content" :style="contentStyle">
-        <BandsLayer
+        <Band
           :lane-bands="sidebarLaneBands"
           :section-bands="sidebarSectionBands"
           :container-style="bandsStyle"

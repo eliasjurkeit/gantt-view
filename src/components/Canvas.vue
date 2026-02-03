@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, defineEmits, defineExpose, defineProps, ref } from "vue";
 
-import BandsLayer from "./BandsLayer.vue";
-import EventBars from "./EventBars.vue";
-import TimelineLegend from "./TimelineLegend.vue";
+import Band from "./Band.vue";
+import Bar from "./Bar.vue";
+import Legend from "./Legend.vue";
 import type { DayLabel, HourMarker, SectionBand, VisibleEventBar } from "./types";
 
 const props = defineProps<{
@@ -58,12 +58,12 @@ defineExpose({
     @scroll="onScroll"
   >
     <div class="timestrip" :style="timestripStyle">
-      <BandsLayer
+      <Band
         :lane-bands="laneBands"
         :section-bands="sectionBands"
         :container-style="{ width: `${totalWidth}px`, height: `${trackHeight}px`, zIndex: 1 }"
       />
-      <TimelineLegend
+      <Legend
         :day-labels="dayLabels"
         :day-backgrounds="dayBackgrounds"
         :hour-markers="hourMarkers"
@@ -72,7 +72,7 @@ defineExpose({
         :hour-width="hourWidth"
         :is-dark="isDark"
       />
-      <EventBars
+      <Bar
         :event-bars="eventBars"
         :lane-height="laneHeight"
         :legend-stack-height="legendStackHeight"
