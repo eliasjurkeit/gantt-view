@@ -1334,9 +1334,7 @@ onBeforeUnmount(() => {
               opacity: 1,
               borderRadius: `${barRadius}px`,
               outline: 'none',
-              backgroundImage: bar.isIdEvent
-                ? `repeating-linear-gradient(45deg, ${bar.borderColor} 0 1px, transparent 1px 6px)`
-                : 'none',
+              backgroundImage: 'none',
             }"
             :title="`${bar.title} (${bar.rangeLabel})`"
           >
