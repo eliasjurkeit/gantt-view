@@ -1137,8 +1137,6 @@ onBeforeUnmount(() => {
               background: section.fill,
               borderTop: `1px solid ${section.border}`,
               borderBottom: `1px solid ${section.border}`,
-              borderLeft: `1px solid ${section.border}`,
-              borderRight: `1px solid ${section.border}`,
             }"
           >
             <span
@@ -1164,12 +1162,13 @@ onBeforeUnmount(() => {
           >
             <div
               class="gantt-sidebar-rect"
-            :style="{
-              height: `${row.height}px`,
-              background: row.color,
-              borderColor: row.borderColor,
-            }"
-          >
+              :style="{
+                height: `${row.height}px`,
+                background: row.color,
+                borderTopColor: row.borderColor,
+                borderBottomColor: row.borderColor,
+              }"
+            >
             <span class="gantt-sidebar-text">{{ row.label }}</span>
             <div class="gantt-sidebar-totals">
               <div
@@ -1239,8 +1238,6 @@ onBeforeUnmount(() => {
               background: section.fill,
               borderTop: `1px solid ${section.border}`,
               borderBottom: `1px solid ${section.border}`,
-              borderLeft: `1px solid ${section.border}`,
-              borderRight: `1px solid ${section.border}`,
             }"
             :title="section.title"
           ></div>
@@ -1427,7 +1424,10 @@ onBeforeUnmount(() => {
   align-items: center;
   padding: 0 12px;
   box-sizing: border-box;
-  border: 1px solid transparent;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-left: 0;
+  border-right: 0;
   border-radius: 0;
   width: 100%;
   justify-content: space-between;
