@@ -760,10 +760,16 @@ const eventBars = computed((): EventBar[] => {
     groupInfo.set(groupKey, info);
   });
 
-  const laneColors = new Map<
+const laneColors = new Map<
     number,
     { color: string; borderColor: string }
   >();
+  const laneShadeStep = (() => {
+    const raw = headerOptions.value?.laneShadeStep;
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return 0.3;
+    return Math.min(1, Math.max(0, value));
+  })();
 
   const sectionKeys = Array.from(lanesBySection.keys()).sort();
   sectionKeys.forEach((sectionKey, sectionIdx) => {
@@ -779,7 +785,7 @@ const eventBars = computed((): EventBar[] => {
       "#A5D8FF";
 
     lanes.forEach((laneIdx, idx) => {
-      const factor = Math.min(0.9, 0.35 + idx * 0.3);
+      const factor = Math.min(0.9, 0.35 + idx * laneShadeStep);
       const color = mixHex(base, "#ffffff", factor);
       const borderColor = darkenHex(base, Math.round(32 + idx * 12));
       laneColors.set(laneIdx, { color, borderColor });
