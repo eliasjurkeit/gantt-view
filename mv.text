@@ -12,27 +12,10 @@ laneGap: 10
 laneBandOpacity: 0.2
 sectionPadding: 25
 sectionGap: 0
-sectionBandOpacity: 0.05
-barRadius: 1
+sectionBandOpacity: 0.2
+barRadius: 0.1
 sectionTitleFontSize: 12
 ---
-
-//TODO:
-//coloring system
-//milestones
-//day X labels
-//headers
-//optimizing code
-//font
-//font sizes
-//font styles
-//exhaustive example config
-//handling of sections inside sections
-
-//keep coloring of bars+make target bar pattern more noticable/intense
-//keep coloring of bars+apply a pattern to target portion of lane and make a line between the two portions of lanes
-//remove coloring of bars
-
 section Vorbereitungen
 2026-01-19 08:00 / 2026-01-19 15:00:
 id: task1
