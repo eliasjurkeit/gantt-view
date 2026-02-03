@@ -25,7 +25,7 @@ Markwhen host  ──postMessage──>  useLpc  ──>  markwhenStore (Pinia) 
                 <──postRequest──  (bidirectional)
 ```
 
-- `src/Markwhen/markwhenStore.ts` — Single Pinia store. Owns all host communication via `useLpc` from `@markwhen/view-client`. Exposes `app` (theme/UI state) and `markwhen` (parsed events). All new host requests should go through `postRequest` here; don't bypass the store.
+- `src/markwhenStore.ts` — Single Pinia store. Owns all host communication via `useLpc` from `@markwhen/view-client`. Exposes `app` (theme/UI state) and `markwhen` (parsed events). All new host requests should go through `postRequest` here; don't bypass the store.
 - `src/components/HourlyTimestrip.vue` — The entire Gantt visualization (~1760 lines). All layout math, time calculations, lane/overlap detection, scroll sync, and rendering live here. Key computed properties: `timeRange`, `hourMarkers`, `eventBars`, `rowLayouts`, `sectionBands`.
 - `src/App.vue` — Thin root: applies dark-mode class from store, mounts `HourlyTimestrip`.
 

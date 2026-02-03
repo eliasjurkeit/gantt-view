@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - Core app entry lives in `src/main.ts`, bootstrapping Vue 3 with Pinia.
 - Primary view markup resides in `src/App.vue`; custom timeline logic is in `src/components/HourlyTimestrip.vue`.
-- State syncing with Markwhen comes from `src/Markwhen/markwhenStore.ts` via `useLpc`.
+- State syncing with Markwhen comes from `src/markwhenStore.ts` via `useLpc`.
 - Static assets and reference screenshots are kept in `src/assets`.
 - Tooling configs: Vite (`vite.config.ts`), TypeScript (`tsconfig*.json`), Tailwind/PostCSS (`tailwind.config.js`, `postcss.config.js`).
 

@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { DateTime } from "luxon";
 import { iter, isEvent, toDateRange } from "@markwhen/parser";
-import { useMarkwhenStore } from "../Markwhen/markwhenStore";
+import { useMarkwhenStore } from "../markwhenStore";
 import Canvas from "./Canvas.vue";
 import Sidebar from "./Sidebar.vue";
 import type {

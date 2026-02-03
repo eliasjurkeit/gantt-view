@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMarkwhenStore } from "./Markwhen/markwhenStore";
+import { useMarkwhenStore } from "./markwhenStore";
 import HourlyTimestrip from "./components/HourlyTimestrip.vue";
 
 const markwhenStore = useMarkwhenStore();
