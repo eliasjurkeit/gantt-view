@@ -21,17 +21,17 @@ This is a **Markwhen view plugin** — a Vue 3 app that renders a Gantt chart in
 ### Data flow
 
 ```
-Markwhen host  ──postMessage──>  useLpc  ──>  markwhenStore (Pinia)  ──>  HourlyTimestrip.vue
+Markwhen host  ──postMessage──>  useLpc  ──>  markwhenStore (Pinia)  ──>  App.vue (Gantt rendering)
                 <──postRequest──  (bidirectional)
 ```
 
 - `src/markwhenStore.ts` — Single Pinia store. Owns all host communication via `useLpc` from `@markwhen/view-client`. Exposes `app` (theme/UI state) and `markwhen` (parsed events). All new host requests should go through `postRequest` here; don't bypass the store.
-- `src/components/HourlyTimestrip.vue` — The entire Gantt visualization (~1760 lines). All layout math, time calculations, lane/overlap detection, scroll sync, and rendering live here. Key computed properties: `timeRange`, `hourMarkers`, `eventBars`, `rowLayouts`, `sectionBands`.
-- `src/App.vue` — Thin root: applies dark-mode class from store, mounts `HourlyTimestrip`.
+- `src/App.vue` — The Gantt visualization. All layout math, time calculations, lane/overlap detection, scroll sync, and rendering live here. Key computed properties: `timeRange`, `hourMarkers`, `eventBars`, `rowLayouts`, `sectionBands`.
+- `src/components/Canvas.vue` / `src/components/Sidebar.vue` — Presentational pieces for the timeline and sidebar; App wires the data into them.
 
 ### Header options (driven by the `.mw` file header)
 
-The Gantt behavior is heavily configurable via header options parsed from the Markwhen input. Relevant ones when modifying rendering: `scale` (hourWidth, default 60px), `laneHeight` (default 20px), `hours` (visible day range), `skipHours`/`skipDates` (excluded time), and various padding/opacity knobs. See `headerOptions` computed in `HourlyTimestrip.vue`.
+The Gantt behavior is heavily configurable via header options parsed from the Markwhen input. Relevant ones when modifying rendering: `scale` (hourWidth, default 60px), `laneHeight` (default 20px), `hours` (visible day range), `skipHours`/`skipDates` (excluded time), and various padding/opacity knobs. See `headerOptions` computed in `App.vue`.
 
 ### Time math
 

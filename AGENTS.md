@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - Core app entry lives in `src/main.ts`, bootstrapping Vue 3 with Pinia.
-- Primary view markup resides in `src/App.vue`; custom timeline logic is in `src/components/HourlyTimestrip.vue`.
+- Primary view markup and timeline logic now reside in `src/App.vue`.
 - State syncing with Markwhen comes from `src/markwhenStore.ts` via `useLpc`.
 - Static assets and reference screenshots are kept in `src/assets`.
 - Tooling configs: Vite (`vite.config.ts`), TypeScript (`tsconfig*.json`), Tailwind/PostCSS (`tailwind.config.js`, `postcss.config.js`).
@@ -23,7 +23,7 @@
 
 ## Testing Guidelines
 - No unit test suite is present; treat `npm run type-check` as the baseline gate before pushing.
-- If you add tests, colocate them near the feature (e.g., `src/components/__tests__/HourlyTimestrip.spec.ts`) and document the runner.
+- If you add tests, colocate them near the feature (e.g., `src/__tests__/App.spec.ts`) and document the runner.
 - When altering date/time math or Markwhen IPC (`useLpc`), add targeted checks or lightweight assertions to catch regressions.
 
 ## Commit & Pull Request Guidelines
