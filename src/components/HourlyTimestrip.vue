@@ -168,9 +168,18 @@ const clampFontSize = (raw: unknown, fallback: number) => {
 const sectionOpacity = computed(() => {
   const header = headerOptions.value;
   if (!header) return 0.12;
-  const raw = header.sectionOpacity;
+  const raw = header.sectionBandOpacity;
   const value = Number(raw);
   if (!Number.isFinite(value)) return 0.12;
+  return Math.min(1, Math.max(0, value));
+});
+
+const laneBandOpacity = computed(() => {
+  const header = headerOptions.value;
+  if (!header) return 0.08;
+  const raw = header.laneBandOpacity;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 0.08;
   return Math.min(1, Math.max(0, value));
 });
 
@@ -964,13 +973,14 @@ const sectionBands = computed<SectionBand[]>(() => {
 const laneBands = computed<SectionBand[]>(() => {
   const bands: SectionBand[] = [];
   const rowAreaOffset = legendStackHeight.value + BAR_OFFSET;
+  const opacity = laneBandOpacity.value; // dependency for fill
   rowLayouts.value.rows.forEach((row) => {
     const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
     bands.push({
       title: row.label,
       top: rowAreaOffset + row.top,
       height: row.height,
-      fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`,
+      fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
       border: row.borderColor,
     });
   });
@@ -1031,13 +1041,14 @@ const sidebarSectionBands = computed<SectionBand[]>(() => {
 const sidebarLaneBands = computed<SectionBand[]>(() => {
   const bands: SectionBand[] = [];
   const rowAreaOffset = sidebarRowsOffset.value + LABEL_HEIGHT;
+  const opacity = laneBandOpacity.value; // dependency for fill
   rowLayouts.value.rows.forEach((row) => {
     const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
     bands.push({
       title: row.label,
       top: rowAreaOffset + row.top,
       height: row.height,
-      fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`,
+      fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
       border: row.borderColor,
     });
   });
