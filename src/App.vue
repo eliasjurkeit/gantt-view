@@ -890,11 +890,14 @@ onBeforeUnmount(() => {
 .view-container {
   height: 100vh;
   width: 100%;
+  box-sizing: border-box;
+  border: 4px solid #94a3b8;
   overflow: hidden;
 }
 
 .view-container.dark {
   background-color: #27272a;
+  border-color: #a1a1aa;
 }
 
 .gantt-root {
