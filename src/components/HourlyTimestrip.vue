@@ -82,6 +82,7 @@ interface SectionBand {
   height: number;
   fill: string;
   border: string;
+  split?: number;
 }
 
 const timeRange = computed(() => {
@@ -773,6 +774,7 @@ const rowLayouts = computed(() => {
       totals: number[];
       sectionName?: string;
       sectionHits: Record<string, number>;
+      targetSublaneCount: number;
     }
   >();
 
@@ -797,9 +799,13 @@ const rowLayouts = computed(() => {
       totals: [],
       sectionName: undefined,
       sectionHits: {},
+      targetSublaneCount: 0,
     };
     entry.lane = bar.lane;
     entry.sublaneCount = Math.max(entry.sublaneCount, bar.sublane + 1);
+    if (bar.isIdEvent) {
+      entry.targetSublaneCount = Math.max(entry.targetSublaneCount, bar.sublane + 1);
+    }
     while (entry.totals.length <= bar.sublane) {
       entry.totals.push(0);
     }
@@ -829,6 +835,7 @@ const rowLayouts = computed(() => {
       color: value.color,
       borderColor: value.borderColor,
       sectionName: value.sectionName,
+      targetSublaneCount: value.targetSublaneCount,
       totals: value.totals.map((total) =>
         Math.round(total * 10) % 10 === 0
           ? `${Math.round(total)}`
@@ -944,12 +951,17 @@ const laneBands = computed<SectionBand[]>(() => {
   const opacity = laneBandOpacity.value; // dependency for fill
   rowLayouts.value.rows.forEach((row) => {
     const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
+    const split =
+      row.targetSublaneCount > 0 && row.targetSublaneCount < row.sublaneCount
+        ? rowAreaOffset + row.top + row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP)
+        : undefined;
     bands.push({
       title: row.label,
       top: rowAreaOffset + row.top,
       height: row.height,
       fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
       border: row.borderColor,
+      split,
     });
   });
   return bands;
@@ -1012,12 +1024,17 @@ const sidebarLaneBands = computed<SectionBand[]>(() => {
   const opacity = laneBandOpacity.value; // dependency for fill
   rowLayouts.value.rows.forEach((row) => {
     const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
+    const split =
+      row.targetSublaneCount > 0 && row.targetSublaneCount < row.sublaneCount
+        ? rowAreaOffset + row.top + row.targetSublaneCount * (laneHeight.value + SUBLANE_GAP)
+        : undefined;
     bands.push({
       title: row.label,
       top: rowAreaOffset + row.top,
       height: row.height,
       fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`,
       border: row.borderColor,
+      split,
     });
   });
   return bands;
@@ -1119,18 +1136,27 @@ onBeforeUnmount(() => {
             class="gantt-sidebar-sections"
             :style="{ height: `${totalHeight}px` }"
           >
+          <div
+            v-for="(lane, index) in sidebarLaneBands"
+            :key="`lane-${index}`"
+            class="gantt-sidebar-lane-band"
+            :style="{
+              top: `${lane.top}px`,
+              height: `${lane.height}px`,
+              background: lane.fill,
+              borderTop: `1px solid ${lane.border}`,
+              borderBottom: `1px solid ${lane.border}`,
+            }"
+          >
             <div
-              v-for="(lane, index) in sidebarLaneBands"
-              :key="`lane-${index}`"
-              class="gantt-sidebar-lane-band"
+              v-if="lane.split !== undefined"
+              class="gantt-sidebar-lane-split"
               :style="{
-                top: `${lane.top}px`,
-                height: `${lane.height}px`,
-                background: lane.fill,
-                borderTop: `1px solid ${lane.border}`,
-                borderBottom: `1px solid ${lane.border}`,
+                top: `${lane.split - lane.top}px`,
+                borderTop: `1px dashed ${lane.border}`,
               }"
             ></div>
+          </div>
             <div
               v-for="(section, index) in sidebarSectionBands"
               :key="index"
@@ -1244,7 +1270,16 @@ onBeforeUnmount(() => {
               borderBottom: `1px solid ${lane.border}`,
             }"
             :title="lane.title"
-          ></div>
+          >
+            <div
+              v-if="lane.split !== undefined"
+              class="lane-split"
+              :style="{
+                top: `${lane.split - lane.top}px`,
+                borderTop: `1px dashed ${lane.border}`,
+              }"
+            ></div>
+          </div>
           <div
             v-for="(section, index) in sectionBands"
             :key="index"
@@ -1373,6 +1408,16 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   box-sizing: border-box;
+}
+
+.gantt-sidebar-lane-split {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  transform: translateY(-0.5px);
 }
 
 .gantt-sidebar-section-band {
@@ -1582,6 +1627,16 @@ onBeforeUnmount(() => {
   left: 0;
   height: 100%;
   box-sizing: border-box;
+}
+
+.lane-split {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  transform: translateY(-0.5px);
 }
 
 .section-block {
