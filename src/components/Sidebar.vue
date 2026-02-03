@@ -134,14 +134,14 @@ defineExpose({
 .gantt-sidebar {
   position: relative;
   height: 100%;
-  border-right: 1px solid rgba(148, 163, 184, 0.4);
+  border-right: 4px solid #94a3b8;
   background-color: rgba(226, 232, 240, 0.65);
   min-width: 140px;
   max-width: 480px;
 }
 
 .gantt-sidebar.dark {
-  border-right-color: rgba(148, 163, 184, 0.2);
+  border-right-color: #a1a1aa;
   background-color: rgba(24, 24, 27, 0.7);
 }
 
