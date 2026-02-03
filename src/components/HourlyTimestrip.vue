@@ -1164,15 +1164,15 @@ onBeforeUnmount(() => {
           >
             <div
               class="gantt-sidebar-rect"
-              :style="{
-                height: `${row.height}px`,
-                background: row.color,
-                borderColor: row.color,
-              }"
-            >
-              <span class="gantt-sidebar-text">{{ row.label }}</span>
-              <div class="gantt-sidebar-totals">
-                <div
+            :style="{
+              height: `${row.height}px`,
+              background: row.color,
+              borderColor: row.borderColor,
+            }"
+          >
+            <span class="gantt-sidebar-text">{{ row.label }}</span>
+            <div class="gantt-sidebar-totals">
+              <div
                   v-for="(total, idx) in row.totals"
                   :key="idx"
                   class="gantt-sidebar-total"
@@ -1292,7 +1292,7 @@ onBeforeUnmount(() => {
               }px`,
               height: `${laneHeight}px`,
               background: bar.color,
-              borderColor: bar.color,
+              borderColor: bar.borderColor,
               opacity: bar.isIdEvent ? targetBarOpacity : 1,
               borderRadius: `${barRadius}px`,
               outline: bar.isIdEvent
