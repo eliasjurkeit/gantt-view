@@ -3,9 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { DateTime } from "luxon";
 import { iter, isEvent, toDateRange } from "@markwhen/parser";
 import { useMarkwhenStore } from "./markwhenStore";
-import TimestreamContent from "./components/TimestreamContent.vue";
-import TimestreamLegend from "./components/TimestreamLegend.vue";
 import Sidebar from "./components/Sidebar.vue";
+import Timestream from "./components/Timestream.vue";
 import type {
   BandRegion,
   DayLabel,
@@ -803,13 +802,6 @@ const timelineContentHeight = computed(
   () => headerStackHeight.value + BAR_VERTICAL_OFFSET + laneLayouts.value.contentHeight + 12
 );
 
-const timelineSizing = computed(() => ({
-  width: `${timelineWidth.value}px`,
-  height: `${timelineHeight.value}px`,
-  "--day-legend-height": `${dayLegendHeight.value}px`,
-  "--hour-label-top": `${dayLegendHeight.value + 4}px`,
-}));
-
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
 
 const sidebarRef = ref<InstanceType<typeof Sidebar> | null>(null);
@@ -877,29 +869,23 @@ onBeforeUnmount(() => {
         :class="{ dark: isDark }"
         @scroll="syncScroll('timeline')"
       >
-        <div class="timeline-stage" :style="timelineSizing">
-          <TimestreamLegend
-            :day-labels="dayLabels"
-            :day-background-rows="dayBackgroundRows"
-            :hour-markers="hourMarkers"
-            :timeline-width="timelineWidth"
-            :timeline-height="timelineHeight"
-            :hour-width="hourWidth"
-            :is-dark-theme="isDark"
-          />
-          <TimestreamContent
-            :timeline-width="timelineWidth"
-            :timeline-height="timelineHeight"
-            :header-stack-height="headerStackHeight"
-            :content-vertical-offset="BAR_VERTICAL_OFFSET"
-            :lane-regions="laneRegions"
-            :section-regions="sectionRegions"
-            :visible-event-bars="renderedEventBars"
-            :lane-row-height="laneRowHeight"
-            :lane-top-offset-by-key="laneTopOffsetByKey"
-            :is-dark-theme="isDark"
-          />
-        </div>
+        <Timestream
+          :day-labels="dayLabels"
+          :day-background-rows="dayBackgroundRows"
+          :hour-markers="hourMarkers"
+          :timeline-width="timelineWidth"
+          :timeline-height="timelineHeight"
+          :hour-width="hourWidth"
+          :header-stack-height="headerStackHeight"
+          :content-vertical-offset="BAR_VERTICAL_OFFSET"
+          :lane-regions="laneRegions"
+          :section-regions="sectionRegions"
+          :visible-event-bars="renderedEventBars"
+          :lane-row-height="laneRowHeight"
+          :lane-top-offset-by-key="laneTopOffsetByKey"
+          :day-legend-height="dayLegendHeight"
+          :is-dark-theme="isDark"
+        />
       </div>
     </div>
   </div>
@@ -939,12 +925,5 @@ onBeforeUnmount(() => {
 
 .timeline-scroll-container.dark {
   background-color: #27272a;
-}
-
-.timeline-stage {
-  display: flex;
-  flex-direction: row;
-  position: relative;
-  height: 100%;
 }
 </style>
