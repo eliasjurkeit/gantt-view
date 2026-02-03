@@ -150,15 +150,6 @@ const barRadius = computed(() => {
   return Math.min(24, Math.max(0, value));
 });
 
-const targetBarOpacity = computed(() => {
-  const header = headerOptions.value;
-  if (!header) return 0.4;
-  const raw = header.targetBarOpacity;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return 0.4;
-  return Math.min(1, Math.max(0, value));
-});
-
 const clampFontSize = (raw: unknown, fallback: number) => {
   const value = Number(raw);
   if (!Number.isFinite(value)) return fallback;
@@ -1340,11 +1331,9 @@ onBeforeUnmount(() => {
               height: `${laneHeight}px`,
               background: bar.color,
               borderColor: bar.borderColor,
-              opacity: bar.isIdEvent ? targetBarOpacity : 1,
+              opacity: 1,
               borderRadius: `${barRadius}px`,
-              outline: bar.isIdEvent
-                ? `1px solid ${bar.borderColor}`
-                : 'none',
+              outline: 'none',
               backgroundImage: bar.isIdEvent
                 ? `repeating-linear-gradient(45deg, ${bar.borderColor} 0 1px, transparent 1px 6px)`
                 : 'none',
