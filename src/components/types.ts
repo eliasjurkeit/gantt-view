@@ -4,6 +4,7 @@ export interface HourMarker {
   dateTime: DateTime;
   label: string;
   isStartOfDay: boolean;
+  isFirstDayStart: boolean;
   spanHours: number;
 }
 

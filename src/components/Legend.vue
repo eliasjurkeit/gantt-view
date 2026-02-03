@@ -42,7 +42,11 @@ const props = defineProps<{
     v-for="(marker, index) in hourMarkers"
     :key="index"
     class="hour-marker"
-    :class="{ 'day-start': marker.isStartOfDay, dark: isDarkTheme }"
+    :class="{
+      'day-start': marker.isStartOfDay,
+      'first-day-start': marker.isFirstDayStart,
+      dark: isDarkTheme,
+    }"
     :style="{ width: `${marker.spanHours * hourWidth}px` }"
   >
     <span class="hour-label">{{ marker.label }}</span>
@@ -120,6 +124,10 @@ const props = defineProps<{
 
 .hour-marker.dark.day-start {
   border-left-color: #a1a1aa;
+}
+
+.hour-marker.first-day-start {
+  border-left-color: transparent;
 }
 
 .hour-label {

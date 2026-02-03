@@ -349,6 +349,7 @@ const hourMarkers = computed((): HourMarker[] => {
   const lastDay = end.startOf("day");
   const segments = getDailySegments();
   if (segments.length === 0) return markers;
+  let hasFirstDayStart = false;
   while (day <= lastDay) {
     if (isSkippedDay(day)) {
       day = day.plus({ days: 1 });
@@ -370,12 +371,18 @@ const hourMarkers = computed((): HourMarker[] => {
           minutes = nextMinutes;
           continue;
         }
+        const isStartOfDay = minutes === firstSegmentStart;
+        const isFirstDayStart = isStartOfDay && !hasFirstDayStart;
         markers.push({
           dateTime: markerTime,
           label: `${markerTime.toFormat("HH:mm")} - ${markerEnd.toFormat("HH:mm")}`,
-          isStartOfDay: minutes === firstSegmentStart,
+          isStartOfDay,
+          isFirstDayStart,
           spanHours,
         });
+        if (isFirstDayStart) {
+          hasFirstDayStart = true;
+        }
         minutes = nextMinutes;
         if (markers.length > 500) break;
       }
