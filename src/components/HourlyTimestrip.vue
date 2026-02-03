@@ -961,6 +961,22 @@ const sectionBands = computed<SectionBand[]>(() => {
     .sort((a, b) => a.top - b.top);
 });
 
+const laneBands = computed<SectionBand[]>(() => {
+  const bands: SectionBand[] = [];
+  const rowAreaOffset = legendStackHeight.value + BAR_OFFSET;
+  rowLayouts.value.rows.forEach((row) => {
+    const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
+    bands.push({
+      title: row.label,
+      top: rowAreaOffset + row.top,
+      height: row.height,
+      fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`,
+      border: row.borderColor,
+    });
+  });
+  return bands;
+});
+
 const totalRowTopOffset = computed(() => 0);
 
 const sidebarSectionBands = computed<SectionBand[]>(() => {
@@ -1010,6 +1026,22 @@ const sidebarSectionBands = computed<SectionBand[]>(() => {
       };
     })
     .sort((a, b) => a.top - b.top);
+});
+
+const sidebarLaneBands = computed<SectionBand[]>(() => {
+  const bands: SectionBand[] = [];
+  const rowAreaOffset = sidebarRowsOffset.value + LABEL_HEIGHT;
+  rowLayouts.value.rows.forEach((row) => {
+    const rgb = hexToRgb(row.color) ?? { r: 148, g: 163, b: 184 };
+    bands.push({
+      title: row.label,
+      top: rowAreaOffset + row.top,
+      height: row.height,
+      fill: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`,
+      border: row.borderColor,
+    });
+  });
+  return bands;
 });
 
 const dateLegendHeight = computed(() => {
@@ -1105,32 +1137,43 @@ onBeforeUnmount(() => {
           }"
         >
           <div
-            v-if="sidebarSectionBands.length"
             class="gantt-sidebar-sections"
             :style="{ height: `${totalHeight}px` }"
           >
             <div
-            v-for="(section, index) in sidebarSectionBands"
-            :key="index"
-            class="gantt-sidebar-section-band"
-            :style="{
-              top: `${section.top}px`,
-              height: `${section.height}px`,
-              background: section.fill,
-              borderTop: `1px solid ${section.border}`,
-              borderBottom: `1px solid ${section.border}`,
-            }"
-          >
-            <span
-              class="gantt-sidebar-section-label"
+              v-for="(lane, index) in sidebarLaneBands"
+              :key="`lane-${index}`"
+              class="gantt-sidebar-lane-band"
               :style="{
-                fontSize: `${sectionTitleFontSize}px`,
+                top: `${lane.top}px`,
+                height: `${lane.height}px`,
+                background: lane.fill,
+                borderTop: `1px solid ${lane.border}`,
+                borderBottom: `1px solid ${lane.border}`,
+              }"
+            ></div>
+            <div
+              v-for="(section, index) in sidebarSectionBands"
+              :key="index"
+              class="gantt-sidebar-section-band"
+              :style="{
+                top: `${section.top}px`,
+                height: `${section.height}px`,
+                background: section.fill,
+                borderTop: `1px solid ${section.border}`,
+                borderBottom: `1px solid ${section.border}`,
               }"
             >
-              {{ section.title }}
-            </span>
+              <span
+                class="gantt-sidebar-section-label"
+                :style="{
+                  fontSize: `${sectionTitleFontSize}px`,
+                }"
+              >
+                {{ section.title }}
+              </span>
+            </div>
           </div>
-        </div>
           <div
             v-for="(row, index) in sidebarRows"
             :key="row.key"
@@ -1144,16 +1187,16 @@ onBeforeUnmount(() => {
           >
             <div
               class="gantt-sidebar-rect"
-              :style="{
-                height: `${row.height}px`,
-                background: row.color,
-                borderTopColor: row.borderColor,
-                borderBottomColor: row.borderColor,
-              }"
-            >
-            <span class="gantt-sidebar-text">{{ row.label }}</span>
-            <div class="gantt-sidebar-totals">
-              <div
+            :style="{
+              height: `${row.height}px`,
+              background: row.color,
+              borderTopColor: row.borderColor,
+              borderBottomColor: row.borderColor,
+            }"
+          >
+              <span class="gantt-sidebar-text">{{ row.label }}</span>
+              <div class="gantt-sidebar-totals">
+                <div
                   v-for="(total, idx) in row.totals"
                   :key="idx"
                   class="gantt-sidebar-total"
@@ -1209,6 +1252,20 @@ onBeforeUnmount(() => {
           class="section-layer"
           :style="{ width: `${totalWidth}px`, height: `${trackHeight}px` }"
         >
+          <div
+            v-for="(lane, index) in laneBands"
+            :key="`lane-${index}`"
+            class="lane-block"
+            :style="{
+              top: `${lane.top}px`,
+              height: `${lane.height}px`,
+              width: `${totalWidth}px`,
+              background: lane.fill,
+              borderTop: `1px solid ${lane.border}`,
+              borderBottom: `1px solid ${lane.border}`,
+            }"
+            :title="lane.title"
+          ></div>
           <div
             v-for="(section, index) in sectionBands"
             :key="index"
@@ -1334,6 +1391,13 @@ onBeforeUnmount(() => {
   inset: 0;
   pointer-events: none;
   z-index: 0;
+}
+
+.gantt-sidebar-lane-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
 }
 
 .gantt-sidebar-section-band {
@@ -1536,6 +1600,13 @@ onBeforeUnmount(() => {
   height: 100%;
   pointer-events: none;
   z-index: 1;
+}
+
+.lane-block {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .section-block {
