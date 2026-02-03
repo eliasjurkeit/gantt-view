@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, defineProps, defineEmits, defineExpose, ref } from "vue";
 
+import BandsLayer from "./BandsLayer.vue";
 import type { SectionBand } from "./types";
 
 const props = defineProps<{
@@ -43,8 +44,7 @@ const contentStyle = computed(() => ({
   height: `${props.totalHeight}px`,
   paddingTop: `${props.sidebarRowsOffset + props.labelHeight}px`,
 }));
-
-const sectionContainerStyle = computed(() => ({
+const bandsStyle = computed(() => ({
   height: `${props.totalHeight}px`,
 }));
 
@@ -64,50 +64,14 @@ defineExpose({
   <div class="gantt-sidebar" :class="{ dark: isDark }" :style="sidebarStyle">
     <div ref="scrollRef" class="gantt-sidebar-scroll" @scroll="onScroll">
       <div class="gantt-sidebar-content" :style="contentStyle">
-        <div class="gantt-sidebar-sections" :style="sectionContainerStyle">
-          <div
-            v-for="(lane, index) in sidebarLaneBands"
-            :key="`lane-${index}`"
-            class="gantt-sidebar-lane-band"
-            :style="{
-              top: `${lane.top}px`,
-              height: `${lane.height}px`,
-              background: lane.fill,
-              borderTop: `1px solid ${lane.border}`,
-              borderBottom: `1px solid ${lane.border}`,
-            }"
-          >
-            <div
-              v-if="lane.split !== undefined"
-              class="gantt-sidebar-lane-split"
-              :style="{
-                top: `${lane.split - lane.top}px`,
-                borderTop: `1px dashed ${lane.border}`,
-              }"
-            ></div>
-          </div>
-          <div
-            v-for="(section, index) in sidebarSectionBands"
-            :key="index"
-            class="gantt-sidebar-section-band"
-            :style="{
-              top: `${section.top}px`,
-              height: `${section.height}px`,
-              background: section.fill,
-              borderTop: `1px solid ${section.border}`,
-              borderBottom: `1px solid ${section.border}`,
-            }"
-          >
-            <span
-              class="gantt-sidebar-section-label"
-              :style="{
-                fontSize: `${sectionTitleFontSize}px`,
-              }"
-            >
-              {{ section.title }}
-            </span>
-          </div>
-        </div>
+        <BandsLayer
+          :lane-bands="sidebarLaneBands"
+          :section-bands="sidebarSectionBands"
+          :container-style="bandsStyle"
+          :show-section-labels="true"
+          :section-title-font-size="sectionTitleFontSize"
+          :is-dark="isDark"
+        />
         <div
           v-for="(row, index) in sidebarRows"
           :key="row.key"
@@ -190,53 +154,6 @@ defineExpose({
 .gantt-sidebar-content {
   width: 100%;
   position: relative;
-}
-
-.gantt-sidebar-sections {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.gantt-sidebar-lane-band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  box-sizing: border-box;
-}
-
-.gantt-sidebar-lane-split {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 0;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-.gantt-sidebar-section-band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  box-sizing: border-box;
-  padding: 6px 8px;
-  z-index: 0;
-}
-
-.gantt-sidebar-section-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1f2937;
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.gantt-sidebar.dark .gantt-sidebar-section-label {
-  color: #e2e8f0;
 }
 
 .gantt-sidebar-row {

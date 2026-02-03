@@ -1,4 +1,5 @@
 ---
+timezone: Europe/Zurich
 hours: 08:00-17:00
 skipHours: 12:00-13:00
 skipDates: [2026-01-21, 2026-01-22, 2026-01-23, 2026-01-24]
@@ -11,9 +12,9 @@ laneHeight: 14
 laneGap: 10
 laneBandOpacity: 0.2
 sectionPadding: 25
-sectionGap: 0
+sectionGap: 10
 sectionBandOpacity: 0.2
-barRadius: 0.1
+barRadius: 3
 sectionTitleFontSize: 12
 ---
 section Vorbereitungen
