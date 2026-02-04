@@ -17,8 +17,9 @@ const markwhenStore = useMarkwhenStore();
 const HOUR_WIDTH = 60;
 const MARKER_HOURS = 2;
 const LABEL_HEIGHT = 24;
-const LEGEND_GAP = 25;
-const BAR_VERTICAL_OFFSET = 12;
+const DAY_LEGEND_CONTENT_HEIGHT = 16;
+const HOUR_LEGEND_CONTENT_HEIGHT = 16;
+const LANE_VERTICAL_PADDING_DEFAULT = 12;
 const LANE_ROW_HEIGHT = 20;
 const DEFAULT_LANE_ROW_GAP = 6;
 const MIN_BAR_WIDTH = 6;
@@ -117,8 +118,9 @@ const sectionOpacity = readNumericHeader("sectionBandOpacity", 0.12, 0, 1);
 const laneBandOpacity = readNumericHeader("laneBandOpacity", 0.08, 0, 1);
 const sectionTitleFontSize = readNumericHeader("sectionTitleFontSize", 12, 8, 32);
 const sectionGap = readNumericHeader("sectionGap", DEFAULT_SECTION_GAP, 0, 96);
-const dayLegendHeight = readNumericHeader("dateLegendHeight", 18, 10, 80);
-const hourLegendHeight = readNumericHeader("hourLegendHeight", 36, 16, 120);
+const dayLegendVerticalPadding = readNumericHeader("dateLegendVerticalPadding", 6, 0, 120);
+const hourLegendVerticalPadding = readNumericHeader("hourLegendVerticalPadding", 12, 0, 160);
+const laneVerticalPadding = readNumericHeader("laneVerticalPadding", LANE_VERTICAL_PADDING_DEFAULT, 0, 200);
 
 const sectionPadding = computed(() => {
   const header = headerOptions.value;
@@ -129,6 +131,14 @@ const sectionPadding = computed(() => {
   if (!Number.isFinite(value)) return minPadding;
   return Math.min(64, Math.max(minPadding, value));
 });
+
+const dayLegendBlockHeight = computed(
+  () => DAY_LEGEND_CONTENT_HEIGHT + dayLegendVerticalPadding.value * 2
+);
+
+const hourLegendBlockHeight = computed(
+  () => HOUR_LEGEND_CONTENT_HEIGHT + hourLegendVerticalPadding.value * 2
+);
 
 const targetLabel = readStringHeader("targetLabel", "Target");
 const actualLabel = readStringHeader("actualLabel", "Actual");
@@ -782,14 +792,14 @@ const buildLaneRegions = (laneAreaOffset: number): BandRegion[] => {
 };
 
 const headerStackHeight = computed(
-  () => dayLegendHeight.value + hourLegendHeight.value + LEGEND_GAP
+  () => dayLegendBlockHeight.value + hourLegendBlockHeight.value
 );
 const sectionRegions = computed<BandRegion[]>(() =>
-  buildSectionRegions(headerStackHeight.value + BAR_VERTICAL_OFFSET)
+  buildSectionRegions(headerStackHeight.value + laneVerticalPadding.value)
 );
-const laneRegions = computed<BandRegion[]>(() => buildLaneRegions(headerStackHeight.value + BAR_VERTICAL_OFFSET));
+const laneRegions = computed<BandRegion[]>(() => buildLaneRegions(headerStackHeight.value + laneVerticalPadding.value));
 const sidebarLaneAreaOffset = computed(() =>
-  Math.max(0, headerStackHeight.value + BAR_VERTICAL_OFFSET - LABEL_HEIGHT)
+  Math.max(0, headerStackHeight.value + laneVerticalPadding.value - LABEL_HEIGHT)
 );
 const sidebarSectionRegions = computed<BandRegion[]>(() =>
   buildSectionRegions(sidebarLaneAreaOffset.value + LABEL_HEIGHT)
@@ -799,7 +809,7 @@ const sidebarLaneRegions = computed<BandRegion[]>(() =>
 );
 
 const timelineContentHeight = computed(
-  () => headerStackHeight.value + BAR_VERTICAL_OFFSET + laneLayouts.value.contentHeight + 12
+  () => headerStackHeight.value + laneVerticalPadding.value * 2 + laneLayouts.value.contentHeight
 );
 
 const isDark = computed(() => markwhenStore.app?.isDark ?? false);
@@ -877,13 +887,15 @@ onBeforeUnmount(() => {
           :timeline-height="timelineHeight"
           :hour-width="hourWidth"
           :header-stack-height="headerStackHeight"
-          :content-vertical-offset="BAR_VERTICAL_OFFSET"
+          :lane-vertical-padding="laneVerticalPadding"
           :lane-regions="laneRegions"
           :section-regions="sectionRegions"
           :visible-event-bars="renderedEventBars"
           :lane-row-height="laneRowHeight"
           :lane-top-offset-by-key="laneTopOffsetByKey"
-          :day-legend-height="dayLegendHeight"
+          :day-legend-block-height="dayLegendBlockHeight"
+          :day-legend-padding="dayLegendVerticalPadding"
+          :hour-legend-padding="hourLegendVerticalPadding"
           :is-dark-theme="isDark"
         />
       </div>

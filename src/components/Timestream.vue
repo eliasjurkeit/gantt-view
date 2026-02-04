@@ -12,21 +12,25 @@ const props = defineProps<{
   timelineHeight: number;
   hourWidth: number;
   headerStackHeight: number;
-  contentVerticalOffset: number;
+  laneVerticalPadding: number;
   laneRegions: BandRegion[];
   sectionRegions: BandRegion[];
   visibleEventBars: RenderedEventBar[];
   laneRowHeight: number;
   laneTopOffsetByKey: Record<string, number>;
-  dayLegendHeight: number;
+  dayLegendBlockHeight: number;
+  dayLegendPadding: number;
+  hourLegendPadding: number;
   isDarkTheme: boolean;
 }>();
 
 const containerStyle = computed(() => ({
   width: `${props.timelineWidth}px`,
   height: `${props.timelineHeight}px`,
-  "--day-legend-height": `${props.dayLegendHeight}px`,
-  "--hour-label-top": `${props.dayLegendHeight + 4}px`,
+  "--day-legend-height": `${props.dayLegendBlockHeight}px`,
+  "--day-legend-padding": `${props.dayLegendPadding}px`,
+  "--hour-legend-padding": `${props.hourLegendPadding}px`,
+  "--hour-label-top": `${props.dayLegendBlockHeight + props.hourLegendPadding}px`,
 }));
 </script>
 
@@ -85,7 +89,7 @@ const containerStyle = computed(() => ({
           width: `${bar.barWidth}px`,
           top: `${
             headerStackHeight +
-            contentVerticalOffset +
+            laneVerticalPadding +
             (laneTopOffsetByKey[bar.groupKey] ?? 0) +
             bar.sublaneIndex * laneRowHeight
           }px`,
@@ -136,21 +140,25 @@ const containerStyle = computed(() => ({
 
 .day-labels {
   position: absolute;
-  top: 4px;
+  top: 0;
   left: 0;
   height: var(--day-legend-height, 18px);
+  padding-top: var(--day-legend-padding, 0px);
+  padding-bottom: var(--day-legend-padding, 0px);
+  box-sizing: border-box;
   pointer-events: none;
   z-index: 2;
 }
 
 .day-label {
   position: absolute;
-  top: 0;
+  top: var(--day-legend-padding, 0px);
   text-align: center;
   font-size: 12px;
   font-weight: 600;
   color: #475569;
   white-space: nowrap;
+  line-height: 16px;
 }
 
 .day-label.dark {
@@ -161,7 +169,6 @@ const containerStyle = computed(() => ({
   flex-shrink: 0;
   display: flex;
   align-items: flex-start;
-  padding-top: 8px;
   border-left: 1px dashed #cbd5e1;
   padding-left: 4px;
   box-sizing: border-box;

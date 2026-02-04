@@ -5,8 +5,8 @@ skipHours: 12:00-13:00
 skipDates: [2026-01-21, 2026-01-22, 2026-01-23, 2026-01-24]
 targetLabel: Soll-Zeit
 actualLabel: Ist-Zeit
-dateLegendHeight: 30
-hourLegendHeight: 80
+dateLegendVerticalPadding: 7
+hourLegendVerticalPadding: 32
 scale: 10
 laneHeight: 14
 laneGap: 10
