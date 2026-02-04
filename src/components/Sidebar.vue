@@ -26,6 +26,8 @@ const props = defineProps<{
   actualLabel: string;
   totalLabel: string;
   sidebarTotals: string[];
+  targetColor: string;
+  actualColor: string;
   isDarkTheme: boolean;
 }>();
 
@@ -122,6 +124,22 @@ defineExpose({
               </span>
               <span class="gantt-sidebar-total-value">{{ total }}</span>
             </div>
+          </div>
+        </div>
+        <div class="gantt-sidebar-legend">
+          <div class="gantt-sidebar-legend-item">
+            <span
+              class="gantt-sidebar-legend-swatch"
+              :style="{ backgroundColor: targetColor }"
+            ></span>
+            <span class="gantt-sidebar-legend-label">{{ targetLabel }}</span>
+          </div>
+          <div class="gantt-sidebar-legend-item">
+            <span
+              class="gantt-sidebar-legend-swatch"
+              :style="{ backgroundColor: actualColor }"
+            ></span>
+            <span class="gantt-sidebar-legend-label">{{ actualLabel }}</span>
           </div>
         </div>
       </div>
@@ -240,6 +258,47 @@ defineExpose({
 
 .gantt-sidebar.dark .gantt-sidebar-total-lane {
   border-top-color: rgba(226, 232, 240, 0.2);
+}
+
+.gantt-sidebar-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 12px 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.gantt-sidebar.dark .gantt-sidebar-legend {
+  border-top-color: rgba(226, 232, 240, 0.2);
+}
+
+.gantt-sidebar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #1f2937;
+}
+
+.gantt-sidebar.dark .gantt-sidebar-legend-item {
+  color: #e2e8f0;
+}
+
+.gantt-sidebar-legend-swatch {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.gantt-sidebar.dark .gantt-sidebar-legend-swatch {
+  border-color: rgba(226, 232, 240, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(24, 24, 27, 0.2);
+}
+
+.gantt-sidebar-legend-label {
+  line-height: 1.3;
 }
 
 .gantt-sidebar-resizer {
