@@ -223,7 +223,7 @@ defineExpose({
   grid-template-columns: repeat(2, minmax(48px, auto));
   column-gap: 12px;
   align-items: center;
-  justify-items: end;
+  justify-items: center;
   margin-left: 0;
 }
 
@@ -241,8 +241,8 @@ defineExpose({
   font-size: 12px;
   font-weight: 700;
   color: #0f172a;
-  justify-self: end;
-  text-align: right;
+  justify-self: center;
+  text-align: center;
   min-width: 2ch;
 }
 
@@ -358,7 +358,7 @@ defineExpose({
   display: grid;
   grid-template-columns: repeat(2, minmax(48px, auto));
   column-gap: 12px;
-  justify-items: end;
+  justify-items: center;
   align-items: flex-start;
 }
 
