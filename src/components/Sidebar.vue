@@ -9,6 +9,8 @@ const props = defineProps<{
   timelineHeight: number;
   laneAreaOffset: number;
   labelAreaHeight: number;
+  labelColumnPaddingLeft: number;
+  labelColumnPaddingTop: number;
   laneRegions: BandRegion[];
   sectionRegions: BandRegion[];
   sectionTitleSize: number;
@@ -19,13 +21,17 @@ const props = defineProps<{
     nextGap: number;
     color: string;
     borderColor: string;
-    totals: string[];
+    targetTotal: string;
+    actualTotal: string;
   }>;
   laneRowHeight: number;
   targetLabel: string;
   actualLabel: string;
   totalLabel: string;
-  sidebarTotals: string[];
+  sidebarTotals: {
+    target: string;
+    actual: string;
+  };
   targetColor: string;
   actualColor: string;
   isDarkTheme: boolean;
@@ -75,6 +81,21 @@ defineExpose({
           :is-dark-theme="isDarkTheme"
         />
         <div
+          class="gantt-sidebar-column-headers"
+          :style="{
+            top: '0px',
+            height: `${labelAreaHeight}px`,
+            paddingLeft: `${labelColumnPaddingLeft}px`,
+            paddingTop: `${labelColumnPaddingTop}px`,
+            paddingRight: '12px',
+          }"
+        >
+          <div class="gantt-sidebar-column-header-row">
+            <span class="gantt-sidebar-column-header">{{ targetLabel }}</span>
+            <span class="gantt-sidebar-column-header">{{ actualLabel }}</span>
+          </div>
+        </div>
+        <div
           v-for="(lane, index) in sidebarLanes"
           :key="lane.key"
           class="gantt-sidebar-lane"
@@ -95,17 +116,8 @@ defineExpose({
           >
             <span class="gantt-sidebar-text">{{ lane.label }}</span>
             <div class="gantt-sidebar-totals">
-              <div
-                v-for="(total, idx) in lane.totals"
-                :key="idx"
-                class="gantt-sidebar-total"
-                :style="{ height: `${laneRowHeight}px` }"
-              >
-                <span class="gantt-sidebar-total-label">
-                  {{ idx === 0 ? targetLabel : actualLabel }}
-                </span>
-                <span class="gantt-sidebar-total-value">{{ total }}</span>
-              </div>
+              <span class="gantt-sidebar-total-value">{{ lane.targetTotal }}</span>
+              <span class="gantt-sidebar-total-value">{{ lane.actualTotal }}</span>
             </div>
           </div>
         </div>
@@ -114,16 +126,8 @@ defineExpose({
             {{ totalLabel }}
           </span>
           <div class="gantt-sidebar-totals">
-            <div
-              v-for="(total, idx) in sidebarTotals"
-              :key="idx"
-              class="gantt-sidebar-total"
-            >
-              <span class="gantt-sidebar-total-label">
-                {{ idx === 0 ? targetLabel : actualLabel }}
-              </span>
-              <span class="gantt-sidebar-total-value">{{ total }}</span>
-            </div>
+            <span class="gantt-sidebar-total-value">{{ sidebarTotals.target }}</span>
+            <span class="gantt-sidebar-total-value">{{ sidebarTotals.actual }}</span>
           </div>
         </div>
         <div class="gantt-sidebar-legend">
@@ -183,7 +187,8 @@ defineExpose({
 }
 
 .gantt-sidebar-rect {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   padding: 0 12px;
   box-sizing: border-box;
@@ -193,7 +198,7 @@ defineExpose({
   border-right: 0;
   border-radius: 0;
   width: 100%;
-  justify-content: space-between;
+  column-gap: 12px;
 }
 
 .gantt-sidebar-text {
@@ -209,18 +214,12 @@ defineExpose({
 }
 
 .gantt-sidebar-totals {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-left: 12px;
-  text-align: left;
-}
-
-.gantt-sidebar-total {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(48px, auto));
+  column-gap: 12px;
   align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
+  justify-items: end;
+  margin-left: 0;
 }
 
 .gantt-sidebar-total-label {
@@ -237,7 +236,7 @@ defineExpose({
   font-size: 12px;
   font-weight: 700;
   color: #0f172a;
-  margin-left: auto;
+  justify-self: end;
   text-align: right;
   min-width: 2ch;
 }
@@ -247,9 +246,10 @@ defineExpose({
 }
 
 .gantt-sidebar-total-lane {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  justify-content: space-between;
+  column-gap: 12px;
   padding: 6px 12px 10px;
   border-top: 1px solid rgba(15, 23, 42, 0.15);
   position: relative;
@@ -258,6 +258,9 @@ defineExpose({
 
 .gantt-sidebar.dark .gantt-sidebar-total-lane {
   border-top-color: rgba(226, 232, 240, 0.2);
+}
+.gantt-sidebar-total-lane .gantt-sidebar-totals {
+  justify-self: end;
 }
 
 .gantt-sidebar-legend {
@@ -308,5 +311,41 @@ defineExpose({
   width: 6px;
   height: 100%;
   cursor: col-resize;
+}
+
+.gantt-sidebar-column-headers {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.gantt-sidebar-column-header-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(48px, auto));
+  column-gap: 12px;
+  justify-items: center;
+  align-items: flex-start;
+}
+
+.gantt-sidebar-column-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+  text-transform: capitalize;
+  text-align: center;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.2em;
+}
+
+.gantt-sidebar.dark .gantt-sidebar-column-header {
+  color: #e2e8f0;
 }
 </style>

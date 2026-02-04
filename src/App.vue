@@ -116,6 +116,8 @@ const laneRowGap = readNumericHeader("laneGap", DEFAULT_LANE_ROW_GAP, 0, 32);
 const barRadius = readNumericHeader("barRadius", 6, 0, 24);
 const sectionOpacity = readNumericHeader("sectionBandOpacity", 0.12, 0, 1);
 const laneBandOpacity = readNumericHeader("laneBandOpacity", 0.08, 0, 1);
+const labelColumnPaddingLeft = readNumericHeader("labelPaddingLeft", 12, 0, 200);
+const labelColumnPaddingTop = readNumericHeader("labelPaddingTop", 8, 0, 200);
 const sectionTitleFontSize = readNumericHeader("sectionTitleFontSize", 12, 8, 32);
 const sectionGap = readNumericHeader("sectionGap", DEFAULT_SECTION_GAP, 0, 96);
 const dayLegendVerticalPadding = readNumericHeader("dateLegendVerticalPadding", 6, 0, 120);
@@ -669,17 +671,31 @@ const laneLayouts = computed(() => {
   }
 
   const lanes = Array.from(lanesMap.entries())
-    .map(([key, value]) => ({
-      key,
-      label: key,
-      laneIndex: value.laneIndex,
-      sublaneCount: value.sublaneCount,
-      color: value.color,
-      borderColor: value.borderColor,
-      sectionName: value.sectionName,
-      targetSublaneCount: value.targetSublaneCount,
-      totals: value.totals.map(formatHours),
-    }))
+    .map(([key, value]) => {
+      const targetTotalValue =
+        value.targetSublaneCount > 0
+          ? value.totals.slice(0, value.targetSublaneCount).reduce((sum, total) => sum + total, 0)
+          : 0;
+      const actualTotalValue =
+        value.targetSublaneCount > 0
+          ? value.totals.slice(value.targetSublaneCount).reduce((sum, total) => sum + total, 0)
+          : value.totals.reduce((sum, total) => sum + total, 0);
+
+      return {
+        key,
+        label: key,
+        laneIndex: value.laneIndex,
+        sublaneCount: value.sublaneCount,
+        color: value.color,
+        borderColor: value.borderColor,
+        sectionName: value.sectionName,
+        targetSublaneCount: value.targetSublaneCount,
+        targetTotalValue,
+        actualTotalValue,
+        targetTotal: formatHours(targetTotalValue),
+        actualTotal: formatHours(actualTotalValue),
+      };
+    })
     .sort((a, b) => a.laneIndex - b.laneIndex);
 
   let offset = 0;
@@ -705,16 +721,16 @@ const laneLayouts = computed(() => {
 
 const sidebarLanes = computed(() => laneLayouts.value.lanes);
 const sidebarTotals = computed(() => {
-  const totals: number[] = [];
+  let target = 0;
+  let actual = 0;
   laneLayouts.value.lanes.forEach((lane) => {
-    lane.totals.forEach((value, idx) => {
-      const numeric = Number(value);
-      if (!Number.isFinite(numeric)) return;
-      if (totals[idx] === undefined) totals[idx] = 0;
-      totals[idx] += numeric;
-    });
+    target += lane.targetTotalValue;
+    actual += lane.actualTotalValue;
   });
-  return totals.map(formatHours);
+  return {
+    target: formatHours(target),
+    actual: formatHours(actual),
+  };
 });
 
 const laneTopOffsetByKey = computed<Record<string, number>>(() => {
@@ -872,6 +888,8 @@ onBeforeUnmount(() => {
         :target-color="TARGET_BAR_COLOR"
         :actual-color="ACTUAL_BAR_COLOR"
         :is-dark-theme="isDark"
+        :label-column-padding-left="labelColumnPaddingLeft"
+        :label-column-padding-top="labelColumnPaddingTop"
         @scroll="syncScroll('sidebar')"
         @resize-start="onResizeStart"
       />
