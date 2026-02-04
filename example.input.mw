@@ -2,11 +2,13 @@
 timezone: Europe/Zurich
 hours: 08:00-17:00
 skipHours: 12:00-13:00
-skipDates: [2026-01-21, 2026-01-22, 2026-01-23, 2026-01-24]
-targetLabel: Soll-Zeit
-actualLabel: Ist-Zeit
-dateLegendVerticalPadding: 7
-hourLegendVerticalPadding: 32
+//skipDates: [2026-01-21, 2026-01-22, 2026-01-23, 2026-01-24]
+targetLabel: Geplant
+actualLabel: Effektiv
+legendNotice: Alle Angaben in Stunden
+hourLegendVerticalPadding: 4
+laneVerticalPadding: 90
+labelPaddingTop: 28
 scale: 10
 laneHeight: 14
 laneGap: 10
@@ -14,56 +16,78 @@ laneBandOpacity: 0.2
 sectionPadding: 25
 sectionGap: 10
 sectionBandOpacity: 0.2
-barRadius: 3
+barRadius: 2
 sectionTitleFontSize: 12
 ---
+
 section Vorbereitungen
-2026-01-19 08:00 / 2026-01-19 15:00:
-id: task1
-2026-01-19 08:00 / 2026-01-19 12:00:
-for: task1
+2026-01-19 08:00 / 2026-01-19 09:00:
+id: Dokumentation aufsetzen
+2026-01-19 08:00 / 2026-01-19 10:00:
+for: Dokumentation aufsetzen
 
-2026-01-20 08:00 / 2026-01-20 10:00:
-id: task1
-2026-01-20 08:00 / 2026-01-20 12:00:
-for: task1
-
+2026-01-19 09:00 / 2026-01-19 12:00:
+id: Zeitplan erstellen
 2026-01-19 10:00 / 2026-01-19 12:00:
-id: task2
-2026-01-19 08:00 / 2026-01-19 12:00:
-for: task2
+for: Zeitplan erstellen
 
-2026-01-19 10:00 / 2026-01-19 10:01:
-id: MeilensteinX
-2026-01-19 10:00 / 2026-01-19 10:01:
-for: MeilensteinX
+2026-01-19 13:00 / 2026-01-19 14:00:
+id: Arbeitsjournal aufsetzen
+2026-01-19 13:00 / 2026-01-19 14:00:
+for: Arbeitsjournal aufsetzen
+
+2026-01-19 14:00 / 2026-01-19 16:00:
+id: Entwicklungsumgebung einrichten
+2026-01-19 14:00 / 2026-01-19 16:00:
+for: Entwicklungsumgebung einrichten
 endSection
 
 section Initialisierung
-2026-01-19 15:00 / 2026-02-03 17:00:
-id: task3
-2026-02-03 15:00 / 2026-02-03 17:00:
-for: task3
+2026-01-20 08:00 / 2026-01-20 09:00:
+id: Dokument beschreiben
+2026-01-20 08:00 / 2026-01-20 09:00:
+for: Dokument beschreiben
+
+2026-01-20 09:00 / 2026-01-20 11:00:
+id: Aufgabenstellung beschreiben
+2026-01-20 09:00 / 2026-01-20 11:00:
+for: Aufgabenstellung beschreiben
+
+2026-01-20 11:00 / 2026-01-20 12:00:
+id: Informationen und Umfeld beschreiben
+2026-01-20 11:00 / 2026-01-20 12:00:
+for: Informationen und Umfeld beschreiben
+
+2026-01-20 13:00 / 2026-01-20 14:00:
+id: Planung und Organisation beschreiben
+2026-01-20 13:00 / 2026-01-20 14:00:
+for: Planung und Organisation beschreiben
 endSection
 
 section Konzept
-2026-01-19 15:00 / 2026-02-03 17:00:
-id: task4
-2026-01-19 15:00 / 2026-02-03 17:00:
-for: task4
+2026-01-20 14:00 / 2026-01-20 16:00:
+id: Situationsanalyse beschreiben
+2026-01-20 14:00 / 2026-01-20 15:00:
+for: Situationsanalyse beschreiben
 
-2026-01-19 15:00 / 2026-02-03 17:00:
-id: task5
-2026-01-19 15:00 / 2026-02-03 17:00:
-for: task5
+2026-01-21 08:00 / 2026-01-21 10:00:
+id: UseCases definieren
+2026-01-20 15:00 / 2026-01-20 16:00:
+for: UseCases definieren
+2026-01-21 08:00 / 2026-01-21 09:00:
+for: UseCases definieren
 endSection
 
-2026-01-19 15:00 / 2026-02-03 17:00:
-id: task6
-2026-01-19 15:00 / 2026-02-03 17:00:
-for: task6
+2026-01-21 10:00 / 2026-01-21 12:00:
+id: Datenbank beschreiben
+2026-01-22 08:00 / 2026-01-22 10:00:
+id: Datenbank beschreiben
+2026-01-21 14:00 / 2026-01-21 17:00:
+for: Datenbank beschreiben
+2026-01-22 16:00 / 2026-01-22 17:00:
+for: Datenbank beschreiben
 
-2026-01-19 15:00 / 2026-02-03 17:00:
-id: task7
-2026-01-19 15:00 / 2026-02-03 17:00:
-for: task7
+2026-01-23 08:00 / 2026-01-23 10:00:
+id: Aufgabe XY
+2026-02-01 15:00 / 2026-02-01 17:00:
+for: Aufgabe XY
