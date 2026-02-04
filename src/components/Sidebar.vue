@@ -47,6 +47,8 @@ const sidebarScrollRef = ref<HTMLDivElement | null>(null);
 
 const sidebarStyle = computed(() => ({
   width: `${props.sidebarWidth}px`,
+  "--target-color": props.targetColor,
+  "--actual-color": props.actualColor,
 }));
 
 const contentStyle = computed(() => ({
@@ -117,8 +119,8 @@ defineExpose({
           >
             <span class="gantt-sidebar-text">{{ lane.label }}</span>
             <div class="gantt-sidebar-totals">
-              <span class="gantt-sidebar-total-value">{{ lane.targetTotal }}</span>
-              <span class="gantt-sidebar-total-value">{{ lane.actualTotal }}</span>
+              <span class="gantt-sidebar-total-value target">{{ lane.targetTotal }}</span>
+              <span class="gantt-sidebar-total-value actual">{{ lane.actualTotal }}</span>
             </div>
           </div>
         </div>
@@ -127,8 +129,8 @@ defineExpose({
             {{ totalLabel }}
           </span>
           <div class="gantt-sidebar-totals">
-            <span class="gantt-sidebar-total-value">{{ sidebarTotals.target }}</span>
-            <span class="gantt-sidebar-total-value">{{ sidebarTotals.actual }}</span>
+            <span class="gantt-sidebar-total-value target">{{ sidebarTotals.target }}</span>
+            <span class="gantt-sidebar-total-value actual">{{ sidebarTotals.actual }}</span>
           </div>
         </div>
         <div class="gantt-sidebar-legend">
@@ -240,14 +242,26 @@ defineExpose({
 .gantt-sidebar-total-value {
   font-size: 12px;
   font-weight: 700;
-  color: #0f172a;
   justify-self: center;
   text-align: center;
   min-width: 2ch;
+  padding: 2px 8px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+}
+
+.gantt-sidebar-total-value.target {
+  background-color: var(--target-color);
+}
+
+.gantt-sidebar-total-value.actual {
+  background-color: var(--actual-color);
 }
 
 .gantt-sidebar.dark .gantt-sidebar-total-value {
-  color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.25);
 }
 
 .gantt-sidebar-total-lane {
