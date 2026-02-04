@@ -88,7 +88,7 @@ defineExpose({
             height: `${labelAreaHeight}px`,
             paddingLeft: `${labelColumnPaddingLeft}px`,
             paddingTop: `${labelColumnPaddingTop}px`,
-            paddingRight: '12px',
+            paddingRight: '2px',
           }"
         >
           <div class="gantt-sidebar-column-header-row">
@@ -195,7 +195,7 @@ defineExpose({
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 4px 0 12px;
   box-sizing: border-box;
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
@@ -255,7 +255,7 @@ defineExpose({
   grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: 12px;
-  padding: 6px 12px 10px;
+  padding: 6px 4px 10px 12px;
   border-top: 1px solid rgba(15, 23, 42, 0.15);
   position: relative;
   z-index: 1;
