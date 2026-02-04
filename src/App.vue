@@ -145,6 +145,7 @@ const hourLegendBlockHeight = computed(
 const targetLabel = readStringHeader("targetLabel", "Target");
 const actualLabel = readStringHeader("actualLabel", "Actual");
 const totalLabel = readStringHeader("totalLabel", "Total");
+const legendNotice = readStringHeader("legendNotice", "");
 
 const skippedDays = computed(() => {
   const header = headerOptions.value;
@@ -884,6 +885,7 @@ onBeforeUnmount(() => {
         :target-label="targetLabel"
         :actual-label="actualLabel"
         :total-label="totalLabel"
+        :legend-notice="legendNotice"
         :sidebar-totals="sidebarTotals"
         :target-color="TARGET_BAR_COLOR"
         :actual-color="ACTUAL_BAR_COLOR"

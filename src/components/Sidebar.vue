@@ -28,6 +28,7 @@ const props = defineProps<{
   targetLabel: string;
   actualLabel: string;
   totalLabel: string;
+  legendNotice: string;
   sidebarTotals: {
     target: string;
     actual: string;
@@ -145,6 +146,10 @@ defineExpose({
             ></span>
             <span class="gantt-sidebar-legend-label">{{ actualLabel }}</span>
           </div>
+        </div>
+        <div v-if="legendNotice" class="gantt-sidebar-legend-notice">
+          <span class="gantt-sidebar-legend-bullet">*</span>
+          <span class="gantt-sidebar-legend-text">{{ legendNotice }}</span>
         </div>
       </div>
     </div>
@@ -302,6 +307,29 @@ defineExpose({
 
 .gantt-sidebar-legend-label {
   line-height: 1.3;
+}
+
+.gantt-sidebar-legend-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 2px 12px 12px;
+  font-size: 11px;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.gantt-sidebar.dark .gantt-sidebar-legend-notice {
+  color: #e2e8f0;
+}
+
+.gantt-sidebar-legend-bullet {
+  font-weight: 700;
+}
+
+.gantt-sidebar-legend-text {
+  flex: 1;
+  word-break: break-word;
 }
 
 .gantt-sidebar-resizer {
