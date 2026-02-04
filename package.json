@@ -1,5 +1,5 @@
 {
-  "name": "vue-view-template",
+  "name": "ganttChart",
   "version": "0.1.1",
   "scripts": {
     "dev": "vite --port=6180",
