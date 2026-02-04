@@ -330,7 +330,7 @@ defineExpose({
   display: grid;
   grid-template-columns: repeat(2, minmax(48px, auto));
   column-gap: 12px;
-  justify-items: center;
+  justify-items: end;
   align-items: flex-start;
 }
 
@@ -339,7 +339,7 @@ defineExpose({
   font-weight: 700;
   color: #1f2937;
   text-transform: capitalize;
-  text-align: center;
+  text-align: right;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   letter-spacing: 0.2em;
