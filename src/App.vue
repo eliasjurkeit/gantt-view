@@ -513,7 +513,16 @@ const renderedEventBars = computed((): RenderedEventBar[] => {
 
   const { start } = timeRange.value;
   const eventSection = sectionsInfo.value.eventSection;
-  const bars: Array<RenderedEventBar & { startTime: DateTime; endTime: DateTime }> = [];
+  const bars: Array<
+    RenderedEventBar & {
+      startTime: DateTime;
+      endTime: DateTime;
+      durationMinutes: number;
+      isMilestoneCandidate: boolean;
+      hasMilestoneTag: boolean;
+    }
+  > = [];
+  const milestoneGroups = new Set<string>();
 
   for (const { eventy, path } of iter(transformed)) {
     if (!isEvent(eventy)) continue;
@@ -521,10 +530,6 @@ const renderedEventBars = computed((): RenderedEventBar[] => {
     const startTime = dr.fromDateTime;
     const endTime = dr.toDateTime;
     const durationMinutes = visibleMinutesBetween(startTime, endTime);
-    if (durationMinutes <= 0) continue;
-    const durationHoursLabel = formatHours(durationMinutes / 60);
-    const leftOffset = (visibleMinutesBetween(start, startTime) / 60) * hourWidth.value;
-    const barWidth = Math.max((durationMinutes / 60) * hourWidth.value, MIN_BAR_WIDTH);
     const label = eventy.firstLine?.restTrimmed || eventy.firstLine?.rest || "Event";
     const hasId = !!eventy.properties?.id;
     const groupKeyRaw =
@@ -533,6 +538,16 @@ const renderedEventBars = computed((): RenderedEventBar[] => {
       eventy.id ??
       label;
     const groupKey = String(groupKeyRaw);
+    const hasTimeComponent =
+      !!eventy.firstLine?.datePart?.includes(":") || !!eventy.firstLine?.datePart?.includes("T");
+    const isMilestoneCandidate = +startTime === +endTime && hasTimeComponent;
+    const hasMilestoneTag = eventy.tags?.some((tag) => tag.toLowerCase() === "milestone") ?? false;
+    if (durationMinutes <= 0 && !(hasMilestoneTag && isMilestoneCandidate)) continue;
+    if (hasMilestoneTag && isMilestoneCandidate) {
+      milestoneGroups.add(groupKey);
+    }
+    const leftOffset = (visibleMinutesBetween(start, startTime) / 60) * hourWidth.value;
+    const barWidth = Math.max((durationMinutes / 60) * hourWidth.value, MIN_BAR_WIDTH);
     const sectionName = Array.isArray(path) ? eventSection.get(path.join(".")) : undefined;
     const timeRangeLabel =
       startTime.hasSame(endTime, "day")
@@ -549,7 +564,7 @@ const renderedEventBars = computed((): RenderedEventBar[] => {
       timeRangeLabel,
       fillColor,
       borderColor,
-      durationHoursLabel,
+      durationHoursLabel: formatHours(durationMinutes / 60),
       groupKey,
       sublaneIndex: 0,
       isTargetEvent: hasId,
@@ -557,8 +572,33 @@ const renderedEventBars = computed((): RenderedEventBar[] => {
       startTime,
       endTime,
       cornerRadius: barRadius.value,
+      durationMinutes,
+      isMilestoneCandidate,
+      hasMilestoneTag,
+      isMilestone: false,
     });
   }
+
+  const milestoneSize = Math.max(laneRowHeight.value, MIN_BAR_WIDTH);
+
+  bars.forEach((bar) => {
+    const isMilestone =
+      bar.isMilestoneCandidate && (bar.hasMilestoneTag || milestoneGroups.has(bar.groupKey));
+    bar.isMilestone = isMilestone;
+    const baseLeft = (visibleMinutesBetween(start, bar.startTime) / 60) * hourWidth.value;
+    const effectiveWidth = isMilestone
+      ? milestoneSize
+      : Math.max((bar.durationMinutes / 60) * hourWidth.value, MIN_BAR_WIDTH);
+    bar.barWidth = effectiveWidth;
+    bar.leftOffset = isMilestone ? Math.max(0, baseLeft - effectiveWidth / 2) : baseLeft;
+    bar.cornerRadius = isMilestone ? 0 : barRadius.value;
+    bar.durationHoursLabel = isMilestone ? "" : formatHours(bar.durationMinutes / 60);
+    bar.timeRangeLabel = isMilestone
+      ? bar.startTime.toFormat("MMM d HH:mm")
+      : bar.startTime.hasSame(bar.endTime, "day")
+        ? `${bar.startTime.toFormat("HH:mm")}–${bar.endTime.toFormat("HH:mm")}`
+        : `${bar.startTime.toFormat("MMM d HH:mm")}–${bar.endTime.toFormat("MMM d HH:mm")}`;
+  });
 
   bars.sort((a, b) => +a.startTime - +b.startTime);
   const groupInfo = new Map<
@@ -612,7 +652,10 @@ const renderedEventBars = computed((): RenderedEventBar[] => {
     }
   });
 
-  return bars.map(({ startTime, endTime, ...rest }) => rest);
+  return bars.map(
+    ({ startTime, endTime, durationMinutes, isMilestoneCandidate, hasMilestoneTag, ...rest }) =>
+      rest
+  );
 });
 
 const laneLayouts = computed(() => {

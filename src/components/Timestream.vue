@@ -83,7 +83,7 @@ const containerStyle = computed(() => ({
         v-for="(bar, index) in visibleEventBars"
         :key="index"
         class="timeline-event-bar"
-        :class="{ dark: isDarkTheme }"
+        :class="{ dark: isDarkTheme, milestone: bar.isMilestone }"
         :style="{
           left: `${bar.leftOffset}px`,
           width: `${bar.barWidth}px`,
@@ -94,13 +94,20 @@ const containerStyle = computed(() => ({
             bar.sublaneIndex * laneRowHeight
           }px`,
           height: `${laneRowHeight}px`,
-          background: bar.fillColor,
-          borderColor: bar.borderColor,
-          borderRadius: `${bar.cornerRadius}px`,
+          background: bar.isMilestone ? 'transparent' : bar.fillColor,
+          borderColor: bar.isMilestone ? 'transparent' : bar.borderColor,
+          borderRadius: bar.isMilestone ? '0px' : `${bar.cornerRadius}px`,
         }"
         :title="`${bar.label} (${bar.timeRangeLabel})`"
       >
-        <span class="event-duration-label">{{ bar.durationHoursLabel }}</span>
+        <div
+          v-if="bar.isMilestone"
+          class="milestone-shape"
+          :style="{ width: `${bar.barWidth}px`, height: `${bar.barWidth}px`, background: bar.borderColor }"
+        >
+          <div class="milestone-shape__fill" :style="{ background: bar.fillColor }"></div>
+        </div>
+        <span v-else class="event-duration-label">{{ bar.durationHoursLabel }}</span>
       </div>
       <div class="event-layer-spacer" :style="{ height: `${timelineHeight}px` }"></div>
     </div>
@@ -237,6 +244,36 @@ const containerStyle = computed(() => ({
 
 .timeline-event-bar.dark {
   box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
+}
+
+.timeline-event-bar.milestone {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.milestone-shape {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+}
+
+.timeline-event-bar.dark .milestone-shape {
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.4);
+}
+
+.milestone-shape__fill {
+  position: absolute;
+  inset: 2px;
+  clip-path: inherit;
 }
 
 .event-duration-label {

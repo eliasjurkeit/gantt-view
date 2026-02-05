@@ -37,4 +37,5 @@ export interface RenderedEventBar {
   isTargetEvent: boolean;
   sectionName?: string;
   cornerRadius: number;
+  isMilestone: boolean;
 }
